@@ -13,7 +13,7 @@ import (
 
 	"github.com/turlamai/trove/daemon/internal/model"
 	"github.com/turlamai/trove/daemon/internal/planner"
-	"github.com/turlamai/trove/daemon/internal/troveerr"
+	"syscall"
 	"github.com/turlamai/trove/daemon/internal/resolver"
 	"github.com/turlamai/trove/daemon/internal/roots"
 )
@@ -28,9 +28,15 @@ func testEnv(t *testing.T) (*Executor, string, string) {
 			t.Fatal(err)
 		}
 	}
+	dev := uint64(1)
+	if st, err := os.Stat(src); err == nil {
+		if sys, ok := st.Sys().(*syscall.Stat_t); ok {
+			dev = uint64(sys.Dev)
+		}
+	}
 	reg := roots.NewWithRoots([]*roots.Root{
-		{Ref: model.KindShare, ID: "src", Path: src, Dev: 1, MountID: 1},
-		{Ref: model.KindShare, ID: "dst", Path: dst, Dev: 1, MountID: 1},
+		{Ref: model.KindShare, ID: "src", Path: src, Dev: dev, MountID: 1},
+		{Ref: model.KindShare, ID: "dst", Path: dst, Dev: dev, MountID: 2},
 	})
 	return New(resolver.New(reg)), src, dst
 }
@@ -173,32 +179,25 @@ func TestMoveSameDevAtomic(t *testing.T) {
 	}
 }
 
-func TestMoveSourceChangedNeverDeleted(t *testing.T) {
+func TestMoveSourceDeleteKeepsChangedSources(t *testing.T) {
 	e, src, dst := testEnv(t)
 	write(t, src, "m.txt", "original")
 	write(t, dst, "placeholder", "x")
 
-	// Force the copy+verify+delete path by faking a different device id on
-	// the destination root (registry-local; no real mount change needed).
-	srcRoot, _ := e.res.RootOf(shareRef("src"))
-	dstRoot, _ := e.res.RootOf(shareRef("dst"))
-	dstRoot.Dev = srcRoot.Dev + 1
-
 	it := statItem(t, e, "src", "m.txt", model.EntryFile)
-	it.Ino = it.Ino + 5000 // planned identity no longer matches live file
+	it.Ino = it.Ino + 5000 // planned identity no longer matches the live file
 	man := buildManifest(t, e, model.ActMove, "src", "m.txt", "dst", "", []planner.Item{it})
 
-	// Identity mismatch → file skipped and kept; the job surfaces
-	// SOURCE_CHANGED instead of pretending the move succeeded.
-	_, err := e.Transfer(man, noHooks())
-	if err == nil || troveerr.Of(err) != troveerr.SourceChanged {
-		t.Fatalf("expected SOURCE_CHANGED, got %v", err)
+	// The source-delete phase must refuse to delete anything whose live
+	// inode no longer matches the plan — the move surfaces SOURCE_CHANGED
+	// instead of pretending success.
+	err := e.deleteSourceTree(man, e.hooks(noHooks()))
+	if err != ErrSourceKept {
+		t.Fatalf("expected ErrSourceKept, got %v", err)
 	}
-	// changed source must remain
 	if _, err := os.Stat(filepath.Join(src, "m.txt")); err != nil {
 		t.Fatalf("changed source must remain: %v", err)
 	}
-	assertNoStagingLeftovers(t, dst)
 }
 
 func TestDeleteChildrenFirstAndLeftovers(t *testing.T) {

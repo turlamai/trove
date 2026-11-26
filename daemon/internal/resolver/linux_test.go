@@ -8,6 +8,7 @@ package resolver
 import (
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/turlamai/trove/daemon/internal/model"
@@ -37,8 +38,15 @@ func setupTree(t *testing.T) (*Resolver, *roots.Root) {
 	if err := os.WriteFile(filepath.Join(base, "victim.txt"), []byte("secret"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	// Use the real device id of the temp dir so mount-identity checks hold.
+	dev := uint64(1)
+	if st, err := os.Stat(root); err == nil {
+		if sys, ok := st.Sys().(*syscall.Stat_t); ok {
+			dev = uint64(sys.Dev)
+		}
+	}
 	reg := roots.NewWithRoots([]*roots.Root{{
-		Ref: model.KindShare, ID: "s", Path: root, Dev: 1, MountID: 1,
+		Ref: model.KindShare, ID: "s", Path: root, Dev: dev, MountID: 1,
 	}})
 	if !New(reg).OpenAT2Supported() {
 		t.Skip("kernel lacks openat2")
