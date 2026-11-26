@@ -173,7 +173,11 @@ export function initApi(b: Partial<typeof boot>) {
 async function request<T>(
   method: string,
   path: string,
-  opts: { body?: unknown; query?: Record<string, string | number | undefined> } = {},
+  opts: {
+    body?: unknown;
+    query?: Record<string, string | number | undefined>;
+    replayed?: boolean;
+  } = {},
 ): Promise<T> {
   const url = new URL(boot.api, window.location.origin);
   url.searchParams.set("cmd", path);
@@ -217,6 +221,20 @@ async function request<T>(
   }
   const data = await res.json();
   if (!res.ok && data && data.error) {
+    // var.ini rotates its CSRF token on emhttp events; a stale page token
+    // surfaces as CSRF_INVALID — refresh once and replay the request.
+    if (data.error.code === "CSRF_INVALID" && !opts.replayed) {
+      const t = await fetch(url.toString().split("?")[0] + "?cmd=csrf", {
+        credentials: "same-origin",
+      });
+      if (t.ok) {
+        const fresh = await t.json();
+        if (fresh?.csrf) {
+          boot.csrf = fresh.csrf;
+          return request<T>(method, path, { ...opts, replayed: true });
+        }
+      }
+    }
     throw new TroveError(data.error.code, data.error.message, !!data.error.recoverable, res.status);
   }
   if (!res.ok) {

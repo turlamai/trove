@@ -126,6 +126,7 @@ function trove_routes(): array {
         'job_retry'    => ['POST', 'POST', '/api/v1/jobs/{id}/retry', 30],
         'job_resolve'  => ['POST', 'POST', '/api/v1/jobs/{id}/resolve', 15],
         'job_events'   => ['GET', 'GET', '/api/v1/jobs/{id}/events', 15],
+        'csrf'         => ['GET', 'GET', '/gateway/csrf', 5],
         'debug_log'    => ['GET', 'GET', '/api/v1/debug/log', 15],
         'settings'     => ['GET', 'GET', '/api/v1/settings', 10],
         'settings_put' => ['POST', 'PUT', '/api/v1/settings', 15],
@@ -190,6 +191,17 @@ function trove_forward(string $method, string $daemonPath, string $query, string
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $cmd = $_GET['cmd'] ?? '';
+
+// Token refresh: var.ini rotates on emhttp events; a long-lived SPA page
+// re-reads the current token here (Unraid's documented gettoken pattern).
+if ($cmd === 'csrf') {
+    $t = trove_csrf_token();
+    if ($t === '') {
+        trove_fail(403, 'CSRF_INVALID', 'token unavailable; re-login', true);
+    }
+    echo json_encode(['csrf' => $t]);
+    exit;
+}
 
 // Method normalization: PUT arrives as POST in some PHP SAPIs via
 // X-HTTP-Method-Override; we accept the real method only.
