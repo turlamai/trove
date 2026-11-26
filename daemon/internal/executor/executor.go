@@ -64,10 +64,25 @@ func New(res *resolver.Resolver) *Executor { return &Executor{res: res} }
 
 func (e *Executor) hooks(h *Hooks) *Hooks {
 	if h == nil {
-		return &Hooks{Check: func() error { return nil }}
+		h = &Hooks{}
 	}
 	if h.Check == nil {
 		h.Check = func() error { return nil }
+	}
+	if h.Progress == nil {
+		h.Progress = func(int64, int64, string) {}
+	}
+	if h.Warning == nil {
+		h.Warning = func(string) {}
+	}
+	if h.Conflict == nil {
+		h.Conflict = func(model.Conflict) {}
+	}
+	if h.Decide == nil {
+		h.Decide = func(string) string { return "" }
+	}
+	if h.Staging == nil {
+		h.Staging = func(string, string) {}
 	}
 	return h
 }

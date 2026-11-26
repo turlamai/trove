@@ -13,6 +13,7 @@ import (
 
 	"github.com/turlamai/trove/daemon/internal/model"
 	"github.com/turlamai/trove/daemon/internal/planner"
+	"github.com/turlamai/trove/daemon/internal/troveerr"
 	"github.com/turlamai/trove/daemon/internal/resolver"
 	"github.com/turlamai/trove/daemon/internal/roots"
 )
@@ -187,12 +188,13 @@ func TestMoveSourceChangedNeverDeleted(t *testing.T) {
 	it.Ino = it.Ino + 5000 // planned identity no longer matches live file
 	man := buildManifest(t, e, model.ActMove, "src", "m.txt", "dst", "", []planner.Item{it})
 
-	out, err := e.Transfer(man, noHooks())
-	if err != nil {
-		t.Fatalf("transfer: %v", err)
+	// Identity mismatch → file skipped and kept; the job surfaces
+	// SOURCE_CHANGED instead of pretending the move succeeded.
+	_, err := e.Transfer(man, noHooks())
+	if err == nil || troveerr.Of(err) != troveerr.SourceChanged {
+		t.Fatalf("expected SOURCE_CHANGED, got %v", err)
 	}
-	_ = out
-	// identity mismatch → file skipped, never deleted
+	// changed source must remain
 	if _, err := os.Stat(filepath.Join(src, "m.txt")); err != nil {
 		t.Fatalf("changed source must remain: %v", err)
 	}

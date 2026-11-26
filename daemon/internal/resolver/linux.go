@@ -21,7 +21,8 @@ import (
 )
 
 func probeOpenat2() bool {
-	fd, err := unix.Openat2(unix.AT_FDCWD, "/proc/self", &unix.OpenHow{
+	// RESOLVE_BENEATH rejects absolute paths, so probe with a relative one.
+	fd, err := unix.Openat2(unix.AT_FDCWD, ".", &unix.OpenHow{
 		Flags:   uint64(unix.O_PATH | unix.O_CLOEXEC),
 		Resolve: uint64(unix.RESOLVE_BENEATH | unix.RESOLVE_NO_MAGICLINKS),
 	})
