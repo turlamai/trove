@@ -305,29 +305,28 @@ func (m *Manager) Close() {
 // worker loop
 // ---------------------------------------------------------------------------
 
+// loop dispatches queued jobs. One unlock per lock, strictly: a double
+// unlock throws a fatal error that kills the whole daemon (this exact bug
+// shipped once and was caught by real-machine acceptance).
 func (m *Manager) loop() {
 	for {
 		m.mu.Lock()
-		for {
-			if m.stopping {
-				m.mu.Unlock()
-				return
-			}
-			if id, ok := m.nextQueuedLocked(); ok {
-				m.mu.Unlock()
-				m.sem <- struct{}{}
-				go func(id string) {
-					defer func() { <-m.sem }()
-					m.run(id)
-					m.mu.Lock()
-					m.cond.Signal()
-					m.mu.Unlock()
-				}(id)
-				break
-			}
+		id, ok := m.nextQueuedLocked()
+		if !ok {
 			m.cond.Wait()
+			m.mu.Unlock()
+			continue
 		}
 		m.mu.Unlock()
+		m.sem <- struct{}{}
+		go func(id string) {
+			defer func() { <-m.sem }()
+			m.run(id)
+			// a finished job may unblock the next queued one
+			m.mu.Lock()
+			m.cond.Signal()
+			m.mu.Unlock()
+		}(id)
 	}
 }
 
