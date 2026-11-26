@@ -2,12 +2,12 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.03">
+<!ENTITY version     "2026.12.04">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "b3fc484e1905cccdde95e6fbb3b7059a1820d60eeff1e2eaf2761e8959e2f579">
+<!ENTITY packageSHA  "3c53dca60c2d033921928d14bc65e163637bd84f6c2d06db8959c46ec5782cee">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -24,7 +24,7 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
-### 2026.12.03
+### 2026.12.04
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
