@@ -28,7 +28,7 @@ function mount() {
   }
   const boot = window.__TROVE_BOOT__ ?? {};
   initApi({
-    api: boot.api ?? "/plugins/trove/api.php",
+    api: boot.api ?? "/plugins/trove/gateway.php",
     csrf: boot.csrf ?? "",
     unraidToken: boot.unraidToken ?? "",
     version: boot.version ?? "dev",

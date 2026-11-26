@@ -32,7 +32,7 @@ $lang = isset($cfg['LANGUAGE']) && $cfg['LANGUAGE'] !== '' ? $cfg['LANGUAGE'] : 
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/trove/web/app.css')?>">
 <script>
 window.__TROVE_BOOT__ = {
-    api: "/plugins/trove/include/api.php",
+    api: "/plugins/trove/include/gateway.php",
     csrf: <?= json_encode($csrf) ?>,
     unraidToken: <?= json_encode($unraidToken) ?>,
     version: <?= json_encode($version) ?>,

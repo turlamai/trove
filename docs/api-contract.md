@@ -1,6 +1,6 @@
 # API Contract
 
-Transport: browser → same-origin PHP gateway (`/plugins/trove/include/api.php?cmd=<command>`)
+Transport: browser → same-origin PHP gateway (`/plugins/trove/include/gateway.php?cmd=<command>`)
 → Unix socket → daemon. All bodies are JSON (UTF-8). The gateway enforces
 Unraid WebGUI auth, CSRF (writes) and same-origin; the daemon additionally
 authenticates the gateway.

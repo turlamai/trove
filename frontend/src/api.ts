@@ -159,7 +159,7 @@ const CSRF_HEADER = "X-Trove-Csrf";
 const TOKEN_HEADER = "X-Trove-Token";
 
 let boot = {
-  api: "/plugins/trove/api.php",
+  api: "/plugins/trove/gateway.php",
   csrf: "",
   unraidToken: "",
   token: "",
