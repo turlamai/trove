@@ -1,0 +1,82 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  daemon:
+    name: daemon (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: daemon/go.sum
+      - name: vet
+        working-directory: daemon
+        run: go vet ./...
+      - name: test (linux syscall layer included)
+        working-directory: daemon
+        run: go test ./... -race
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: install
+        working-directory: frontend
+        run: npm ci --no-fund --no-audit
+      - name: typecheck + build
+        working-directory: frontend
+        run: npm run build
+
+  gateway:
+    name: php gateway lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+      - name: php -l (gateway and pages)
+        run: |
+          find plugin -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l <(sed -n '/^---$/,$p' plugin/root/usr/local/emhttp/plugins/trove/trove.page | tail -n +2)
+          php -l <(sed -n '/^---$/,$p' plugin/root/usr/local/emhttp/plugins/trove/trove-settings.page | tail -n +2)
+
+  package:
+    name: package (txz dry run)
+    runs-on: ubuntu-latest
+    needs: [daemon, frontend, gateway]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: daemon/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: build package
+        run: ./scripts/build.sh 0.0.0-ci
+      - name: verify checksums
+        run: cd dist && shasum -a 256 --check SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trove-package
+          path: |
+            dist/*.txz
+            dist/trove.plg
+            dist/SHA256SUMS

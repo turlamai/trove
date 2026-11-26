@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Trove</title>
+    <script>
+      // Dev-mode boot config; the Unraid page injects the real values.
+      window.__TROVE_BOOT__ = {
+        api: "/plugins/trove/api.php",
+        csrf: "dev",
+        version: "dev",
+      };
+    </script>
+  </head>
+  <body>
+    <div id="trove-root" class="trove"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

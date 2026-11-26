@@ -1,0 +1,21 @@
+Trove — native file manager for Unraid
+======================================
+
+A storage-aware file manager for the Unraid WebGUI: shares-first browsing,
+an optional dual-pane workflow, and server-side background jobs with
+staging → verify → atomic commit semantics.
+
+Safety model (short version):
+- All operations are addressed by typed roots (share / disk / pool) plus a
+  root-relative path; absolute client paths are never executed.
+- Mixing logical shares (/mnt/user) with physical disks/pools in one
+  operation is refused — they can be two views of the same data.
+- Copies stage to a temporary file, fsync, verify, then commit atomically;
+  a move deletes its source only after verification.
+- appdata / domains / system / isos are write-protected by default.
+
+Configuration: Settings → Trove (job data directory, parallel jobs,
+protection mode, expert mode). Until a job data directory is configured the
+plugin runs read-only.
+
+Project: https://github.com/turlamai/trove

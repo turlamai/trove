@@ -1,0 +1,34 @@
+Menu="Tools"
+Title="Trove"
+Icon="trove.png"
+Type="php"
+---
+<?php
+// Trove — native file manager for Unraid (main page).
+// Renders the SPA container; the bundle is served by nginx from the plugin
+// directory, cache-busted with the plugin version.
+$plugin = 'trove';
+$cfg = parse_ini_file('/boot/config/plugins/trove/trove.cfg');
+if (!is_array($cfg)) {
+    $cfg = [];
+}
+$version = 'dev';
+$plg = @file_get_contents("/var/log/plugins/{$plugin}.plg");
+if ($plg && preg_match('/version\s*=\s*"([^"]+)"/', $plg, $m)) {
+    $version = $m[1];
+}
+$var = @parse_ini_file('/var/local/emhttp/var.ini');
+$csrf = is_array($var) && isset($var['csrf_token']) ? (string)$var['csrf_token'] : '';
+$lang = isset($cfg['LANGUAGE']) && $cfg['LANGUAGE'] !== '' ? $cfg['LANGUAGE'] : '';
+?>
+<div id="trove-root" class="trove"></div>
+<link type="text/css" rel="stylesheet" href="<?autov('/plugins/trove/web/app.css')?>">
+<script>
+window.__TROVE_BOOT__ = {
+    api: "/plugins/trove/include/api.php",
+    csrf: <?= json_encode($csrf) ?>,
+    version: <?= json_encode($version) ?>,
+    language: <?= json_encode($lang) ?>
+};
+</script>
+<script src="<?autov('/plugins/trove/web/app.js')?>" defer></script>

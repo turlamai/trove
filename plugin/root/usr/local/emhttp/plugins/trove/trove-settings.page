@@ -1,0 +1,72 @@
+Menu="Settings"
+Title="Trove"
+Icon="trove.png"
+Type="php"
+---
+<?php
+// Trove settings (native Dynamix form). Writes the same cfg file the daemon
+// reads; changes apply on next daemon settings reload.
+$plugin = 'trove';
+$cfg = parse_plugin_cfg($plugin);
+if (!is_array($cfg)) {
+    $cfg = [];
+}
+$dataDir = isset($cfg['DATA_DIR']) ? (string)$cfg['DATA_DIR'] : '';
+$concurrency = isset($cfg['CONCURRENCY']) ? (string)$cfg['CONCURRENCY'] : '1';
+$physicalWrite = isset($cfg['PHYSICAL_WRITE']) ? $cfg['PHYSICAL_WRITE'] : 'false';
+$protectedMode = isset($cfg['PROTECTED_MODE']) ? (string)$cfg['PROTECTED_MODE'] : 'deny';
+$expertMode = isset($cfg['EXPERT_MODE']) ? $cfg['EXPERT_MODE'] : 'false';
+?>
+<form markdown="1" method="POST" action="/update.php" target="progressFrame">
+<input type="hidden" name="#file" value="<?=$plugin?>/<?=$plugin?>.cfg">
+
+_(Job data directory)_
+: <input type="text" name="DATA_DIR" value="<?= htmlspecialchars($dataDir) ?>" placeholder="/mnt/user/trove-data" maxlength="256">
+
+<blockquote class="inline_help">
+Directory for the background job journal. It must live on the array or a pool
+(under /mnt/...) — never on the USB flash boot device. Until this is set,
+Trove runs in read-only mode and all write operations are disabled.
+</blockquote>
+
+_(Parallel jobs)_
+: <select name="CONCURRENCY">
+  <?=mk_option($concurrency, "1", "1")?>
+  <?=mk_option($concurrency, "2", "2")?>
+  <?=mk_option($concurrency, "3", "3")?>
+  <?=mk_option($concurrency, "4", "4")?>
+  </select>
+
+<blockquote class="inline_help">
+Number of file operations that may run at the same time. The default of 1 is
+deliberately conservative on spinning-disk arrays.
+</blockquote>
+
+_(System share write protection)_
+: <select name="PROTECTED_MODE">
+  <?=mk_option($protectedMode, "deny", _("Refuse writes (recommended)"))?>
+  <?=mk_option($protectedMode, "ack", _("Require explicit confirmation"))?>
+  </select>
+
+<blockquote class="inline_help">
+appdata, domains, system and isos hold Docker/VM state. Writes into these
+shares are refused by default; "require explicit confirmation" lets the file
+manager proceed only after you acknowledge the warning in the app.
+</blockquote>
+
+_(Expert mode)_
+: <select name="EXPERT_MODE">
+  <?=mk_option($expertMode, "false", _("No"))?>
+  <?=mk_option($expertMode, "true", _("Yes"))?>
+  </select>
+
+<blockquote class="inline_help">
+Show physical disks (/mnt/diskN) and pools (/mnt/&lt;pool&gt;) in the
+navigation. Physical views are read-only unless physical writes are enabled
+in the app settings; mixing them with logical shares in one operation is
+always refused.
+</blockquote>
+
+<input type="submit" name="#default" value="_(Default)_">
+: <input type="submit" name="#apply" value="_(Apply)_"><input type="button" value="_(Done)_" onclick="done()">
+</form>

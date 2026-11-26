@@ -1,0 +1,5 @@
+#!/bin/bash
+# emhttp event hook: make sure the daemon is running when the server (or the
+# array) starts. Runs detached so emhttp is never blocked.
+/usr/local/emhttp/plugins/trove/scripts/start-daemon.sh >/dev/null 2>&1 &
+exit 0

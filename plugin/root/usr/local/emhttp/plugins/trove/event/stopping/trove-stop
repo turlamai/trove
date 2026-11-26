@@ -1,0 +1,5 @@
+#!/bin/bash
+# emhttp event hook: graceful daemon shutdown (finish-or-cancel jobs within
+# its own 5 s budget) when emhttp stops.
+pkill -TERM -x troved 2>/dev/null
+exit 0

@@ -1,0 +1,100 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+<!ENTITY name        "trove">
+<!ENTITY author      "turlamai">
+<!ENTITY version     "__TROVE_VERSION__">
+<!ENTITY github      "turlamai/trove">
+<!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
+<!ENTITY packageFile "trove-&version;-x86_64-1.txz">
+<!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
+<!ENTITY packageSHA  "__TROVE_SHA256__">
+<!ENTITY pluginLOC   "/boot/config/plugins/&name;">
+<!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
+]>
+
+<PLUGIN name="&name;"
+        author="&author;"
+        version="&version;"
+        launch="Tools/Trove"
+        pluginURL="&pluginURL;"
+        icon="folder-open"
+        min="7.0.0"
+        project="https://github.com/&github;"
+        readme="https://github.com/&github;#readme"
+        support="https://github.com/&github;/issues">
+
+<CHANGES>
+### __TROVE_VERSION__
+- Development preview: shares-first file browsing, optional dual-pane,
+  storage-safety checks (namespace mixing refused), background jobs with
+  staging → verify → atomic commit, task center, zh-CN/en UI.
+- Read-only until a job data directory is configured (Settings → Trove).
+</CHANGES>
+
+<!--
+  Pre-install: keep only the current package cache on the flash drive.
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+mkdir -p &pluginLOC;
+rm -f $(ls &pluginLOC;/trove-*.txz 2>/dev/null | grep -v '&packageFile;' | grep -v '^$')
+exit 0
+</INLINE>
+</FILE>
+
+<!--
+  Package: downloaded from the versioned GitHub release, SHA-256 verified,
+  installed with Slackware package tooling.
+-->
+<FILE Name="&pluginLOC;/&packageFile;" Run="upgradepkg --install-new">
+<URL>&packageURL;</URL>
+<SHA256>&packageSHA;</SHA256>
+</FILE>
+
+<!--
+  Post-install: refresh page registration and start the daemon detached.
+-->
+<FILE Run="/bin/bash">
+<INLINE>
+/usr/local/emhttp/plugins/trove/scripts/start-daemon.sh >/dev/null 2>&1 &
+echo ""
+echo "------------------------------------------------------------"
+echo " Trove has been installed."
+echo " Open it under Tools → Trove. Settings → Trove for configuration."
+echo "------------------------------------------------------------"
+echo ""
+exit 0
+</INLINE>
+</FILE>
+
+<!--
+  Update: remove stale files from previous layouts before reinstalling.
+-->
+<FILE Run="/bin/bash" Method="update">
+<INLINE>
+pkill -TERM -x troved 2>/dev/null
+rm -f /usr/local/sbin/troved
+exit 0
+</INLINE>
+</FILE>
+
+<!--
+  Remove: stop the daemon, remove the package; keep user settings on flash
+  and keep any configured job data directory (user data is never deleted).
+-->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+pkill -TERM -x troved 2>/dev/null
+sleep 1
+removepkg trove-&version;-x86_64-1 2>/dev/null || true
+rm -f &pluginLOC;/trove-*.txz
+rm -rf /run/trove
+echo ""
+echo " Trove removed. Settings kept in &pluginLOC;/trove.cfg;"
+echo " delete that file and your job data directory manually if desired."
+echo ""
+exit 0
+</INLINE>
+</FILE>
+
+</PLUGIN>
