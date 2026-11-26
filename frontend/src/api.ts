@@ -170,6 +170,21 @@ export function initApi(b: Partial<typeof boot>) {
   boot = { ...boot, ...b };
 }
 
+async function refreshCsrf(apiUrl: string): Promise<boolean> {
+  try {
+    const t = await fetch(apiUrl + "?cmd=csrf", { credentials: "same-origin" });
+    if (!t.ok) return false;
+    const fresh = await t.json();
+    if (fresh?.csrf) {
+      boot.csrf = fresh.csrf;
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
 async function request<T>(
   method: string,
   path: string,
@@ -215,6 +230,17 @@ async function request<T>(
     throw new TroveError("NETWORK", "network error", true, 0);
   }
   const ct = res.headers.get("Content-Type") ?? "";
+  // Unraid's nginx CSRF layer silently drops POSTs whose csrf_token field
+  // no longer matches the rotated var.ini token: the client sees an empty
+  // non-JSON 200. Refresh the token once and replay the request.
+  const looksDropped = method !== "GET" && res.status === 200 && !ct.includes("json");
+  if (looksDropped && !opts.replayed) {
+    const refreshed = await refreshCsrf(url.toString().split("?")[0]);
+    if (refreshed) {
+      return request<T>(method, path, { ...opts, replayed: true });
+    }
+    throw new TroveError("CSRF_INVALID", "security token expired; page reload required", true, res.status);
+  }
   if (!ct.includes("json")) {
     // Non-JSON (e.g. gateway error page) — never parse as data.
     throw new TroveError("GATEWAY", `unexpected gateway response (${res.status})`, true, res.status);
@@ -224,15 +250,9 @@ async function request<T>(
     // var.ini rotates its CSRF token on emhttp events; a stale page token
     // surfaces as CSRF_INVALID — refresh once and replay the request.
     if (data.error.code === "CSRF_INVALID" && !opts.replayed) {
-      const t = await fetch(url.toString().split("?")[0] + "?cmd=csrf", {
-        credentials: "same-origin",
-      });
-      if (t.ok) {
-        const fresh = await t.json();
-        if (fresh?.csrf) {
-          boot.csrf = fresh.csrf;
-          return request<T>(method, path, { ...opts, replayed: true });
-        }
+      const refreshed = await refreshCsrf(url.toString().split("?")[0]);
+      if (refreshed) {
+        return request<T>(method, path, { ...opts, replayed: true });
       }
     }
     throw new TroveError(data.error.code, data.error.message, !!data.error.recoverable, res.status);
