@@ -183,13 +183,24 @@ async function request<T>(
     "X-Requested-With": "trove",
   };
   if (boot.token) headers[TOKEN_HEADER] = boot.token;
-  if (method !== "GET") headers[CSRF_HEADER] = boot.csrf;
+  // Writes POST a form-encoded body: Unraid's nginx CSRF layer only
+  // inspects `csrf_token` form fields, and the gateway reads the JSON
+  // payload from the `payload` field.
+  let body: string | undefined;
+  if (method !== "GET") {
+    headers[CSRF_HEADER] = boot.csrf;
+    body = new URLSearchParams({
+      csrf_token: boot.csrf,
+      payload: JSON.stringify(opts.body ?? {}),
+    }).toString();
+    headers["Content-Type"] = "application/x-www-form-urlencoded;charset=UTF-8";
+  }
   let res: Response;
   try {
     res = await fetch(url.toString(), {
       method,
       headers,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      body,
       credentials: "same-origin",
     });
   } catch {
@@ -258,7 +269,8 @@ export const api = {
       { query: { since } },
     ),
   settings: () => request<Settings>("GET", "settings"),
-  saveSettings: (patch: Partial<Settings>) => request<{ status: string }>("PUT", "settings", { body: patch }),
+  // POST from the browser (nginx CSRF layer); the gateway forwards as PUT.
+  saveSettings: (patch: Partial<Settings>) => request<{ status: string }>("POST", "settings", { body: patch }),
   search: (rootId: string, path: string, q: string, limit = 500) =>
     request<{
       root: RootRef;

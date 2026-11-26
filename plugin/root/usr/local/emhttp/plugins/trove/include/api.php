@@ -95,23 +95,24 @@ function trove_same_origin(): bool {
  * here is refused; there is no generic pass-through.
  */
 function trove_routes(): array {
+    // [client method, daemon method, daemon path, timeout]
     return [
-        'capabilities' => ['GET', '/api/v1/capabilities', 10],
-        'roots'        => ['GET', '/api/v1/roots', 10],
-        'entries'      => ['GET', '/api/v1/entries', 30],
-        'entry'        => ['GET', '/api/v1/entry', 15],
-        'download'     => ['GET', '/api/v1/download', 600],
-        'search'       => ['GET', '/api/v1/search', 60],
-        'plan'         => ['POST', '/api/v1/operations/plan', 90],
-        'execute'      => ['POST', '/api/v1/operations/execute', 30],
-        'jobs'         => ['GET', '/api/v1/jobs', 10],
-        'job'          => ['GET', '/api/v1/jobs/{id}', 15],
-        'job_cancel'   => ['POST', '/api/v1/jobs/{id}/cancel', 15],
-        'job_retry'    => ['POST', '/api/v1/jobs/{id}/retry', 30],
-        'job_resolve'  => ['POST', '/api/v1/jobs/{id}/resolve', 15],
-        'job_events'   => ['GET', '/api/v1/jobs/{id}/events', 15],
-        'settings'     => ['GET', '/api/v1/settings', 10],
-        'settings_put' => ['PUT', '/api/v1/settings', 15],
+        'capabilities' => ['GET', 'GET', '/api/v1/capabilities', 10],
+        'roots'        => ['GET', 'GET', '/api/v1/roots', 10],
+        'entries'      => ['GET', 'GET', '/api/v1/entries', 30],
+        'entry'        => ['GET', 'GET', '/api/v1/entry', 15],
+        'download'     => ['GET', 'GET', '/api/v1/download', 600],
+        'search'       => ['GET', 'GET', '/api/v1/search', 60],
+        'plan'         => ['POST', 'POST', '/api/v1/operations/plan', 90],
+        'execute'      => ['POST', 'POST', '/api/v1/operations/execute', 30],
+        'jobs'         => ['GET', 'GET', '/api/v1/jobs', 10],
+        'job'          => ['GET', 'GET', '/api/v1/jobs/{id}', 15],
+        'job_cancel'   => ['POST', 'POST', '/api/v1/jobs/{id}/cancel', 15],
+        'job_retry'    => ['POST', 'POST', '/api/v1/jobs/{id}/retry', 30],
+        'job_resolve'  => ['POST', 'POST', '/api/v1/jobs/{id}/resolve', 15],
+        'job_events'   => ['GET', 'GET', '/api/v1/jobs/{id}/events', 15],
+        'settings'     => ['GET', 'GET', '/api/v1/settings', 10],
+        'settings_put' => ['POST', 'PUT', '/api/v1/settings', 15],
     ];
 }
 
@@ -180,7 +181,7 @@ $routes = trove_routes();
 if (!isset($routes[$cmd])) {
     trove_fail(404, 'NOT_FOUND', 'unknown command');
 }
-[$wantMethod, $daemonPath, $timeout] = $routes[$cmd];
+[$wantMethod, $daemonMethod, $daemonPath, $timeout] = $routes[$cmd];
 
 if ($method !== $wantMethod) {
     trove_fail(405, 'BAD_REQUEST', 'method not allowed for this command');
@@ -191,11 +192,15 @@ if (!trove_same_origin()) {
     trove_fail(403, 'ORIGIN_REJECTED', 'cross-origin request rejected');
 }
 
-// Writes need the WebGUI CSRF token in a custom header.
+// Writes need the WebGUI CSRF token. Unraid's nginx already drops POSTs
+// whose `csrf_token` body field does not match var.ini — we validate the
+// same field ourselves (defense in depth); the X-Trove-Csrf header remains
+// accepted as an alternative channel.
 if ($method !== 'GET') {
-    $hdr = $_SERVER['HTTP_X_TROVE_CSRF'] ?? '';
     $csrf = trove_csrf_token();
-    if ($csrf === '' || $hdr === '' || !hash_equals($csrf, $hdr)) {
+    $candidate = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_TROVE_CSRF'] ?? '';
+    if ($csrf === '' || !is_string($candidate) || $candidate === ''
+        || !hash_equals($csrf, $candidate)) {
         trove_fail(403, 'CSRF_INVALID', 'invalid security token', true);
     }
 }
@@ -223,15 +228,17 @@ if ($method === 'GET') {
         }
     }
     $query = implode('&', $parts);
-} else {
-    // JSON body passthrough (the daemon enforces size/schema limits).
-    $query = '';
 }
 
+// Body: clients POST urlencoded `payload` (JSON) + `csrf_token`, because
+// Unraid's nginx CSRF layer only inspects form-encoded POST bodies. The
+// daemon keeps speaking JSON.
 $body = '';
 if ($method === 'POST') {
-    $raw = file_get_contents('php://input');
-    if ($raw !== false && $raw !== '') {
+    $raw = isset($_POST['payload']) && is_string($_POST['payload'])
+        ? $_POST['payload']
+        : file_get_contents('php://input');
+    if (is_string($raw) && $raw !== '') {
         if (strlen($raw) > 1048576) {
             trove_fail(413, 'BAD_REQUEST', 'body too large');
         }
@@ -252,4 +259,4 @@ if ($cmd === 'download') {
     header('X-Content-Type-Options: nosniff');
 }
 
-echo trove_forward($method, $finalPath, $query, $body, $timeout);
+echo trove_forward($daemonMethod, $finalPath, $query, $body, $timeout);
