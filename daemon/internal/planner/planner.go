@@ -419,8 +419,8 @@ func (p *Planner) planDelete(req model.PlanRequest, plan *model.Plan, s Settings
 		return nil, err
 	}
 
-	man := &Manifest{Action: model.ActDelete, CreatedAt: time.Now(), DeleteTargets: req.Targets}
 	root := req.Targets[0].Root
+	man := &Manifest{Action: model.ActDelete, SourceRoot: root, CreatedAt: time.Now(), DeleteTargets: req.Targets}
 	for _, t := range req.Targets {
 		if t.Root != root {
 			return nil, troveerr.New(troveerr.BadRequest, "delete targets must share one root")
