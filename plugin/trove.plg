@@ -57,7 +57,9 @@ exit 0
 <FILE Run="/bin/bash">
 <INLINE>
 # (XML special characters are escaped for the plugin parser)
-/usr/local/emhttp/plugins/trove/scripts/start-daemon.sh &gt;/dev/null 2&gt;&amp;1 &amp;
+# --restart: the upgrade replaced the binary; a live daemon keeps its old
+# inode, so post-install must bounce the process to run the new code.
+/usr/local/emhttp/plugins/trove/scripts/start-daemon.sh --restart &gt;/dev/null 2&gt;&amp;1 &amp;
 echo ""
 echo "------------------------------------------------------------"
 echo " Trove has been installed."
@@ -73,7 +75,7 @@ exit 0
 -->
 <FILE Run="/bin/bash" Method="update">
 <INLINE>
-pkill -TERM -x troved 2>/dev/null
+# remove stale binaries from previous layouts (post-install does the restart)
 rm -f /usr/local/sbin/troved
 exit 0
 </INLINE>

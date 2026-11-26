@@ -12,8 +12,9 @@ LOG=/var/log/troved.log
 
 mkdir -p "$RUNDIR"
 
-# Already healthy?
-if [ -S "$SOCK" ]; then
+# Already healthy? (skipped with --restart: install/upgrade must replace
+# the running binary — a live daemon keeps its old inode otherwise)
+if [ "${1:-}" != "--restart" ] && [ -S "$SOCK" ]; then
   TOKEN=$(cat "$RUNDIR/token" 2>/dev/null || true)
   if [ -n "$TOKEN" ] && curl --unix-socket "$SOCK" -sf -m 3 \
        -H "X-Trove-Token: $TOKEN" http://troved/healthz >/dev/null 2>&1; then
@@ -21,9 +22,13 @@ if [ -S "$SOCK" ]; then
   fi
 fi
 
-# Clean up a stale instance/socket, then start detached.
-pkill -x troved 2>/dev/null
-sleep 0.3
+# Stop a running instance and wait for it to let go of the socket.
+pkill -TERM -x troved 2>/dev/null
+for _ in $(seq 1 20); do
+  pgrep -x troved >/dev/null 2>&1 || break
+  sleep 0.3
+done
+pkill -KILL -x troved 2>/dev/null
 rm -f "$SOCK"
 
 if [ ! -x "$BIN" ]; then

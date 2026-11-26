@@ -115,6 +115,8 @@ func main() {
 		}
 	})
 
+	api.Version = version
+
 	dep := api.Deps{
 		Resolver: res,
 		Registry: reg,
