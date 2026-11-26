@@ -341,6 +341,27 @@ func (m *Manager) nextQueuedLocked() (string, bool) {
 }
 
 func (m *Manager) run(id string) {
+	// A panic in an executor must never take the daemon down: capture it
+	// into the job record (message + stack) so it surfaces in the UI.
+	defer func() {
+		if r := recover(); r != nil {
+			m.mu.Lock()
+			rt, ok := m.jobs[id]
+			if ok {
+				now := time.Now()
+				rt.job.EndedAt = &now
+				rt.job.State = model.JobFailed
+				rt.job.ErrorCode = string(troveerr.Internal)
+				rt.job.Message = fmt.Sprintf("executor panic: %v", r)
+				rt.job.CurrentFile = ""
+				m.mu.Unlock()
+				m.emit(rt, "error", string(troveerr.Internal), rt.job.Message)
+				_ = m.store.Sync()
+				return
+			}
+			m.mu.Unlock()
+		}
+	}()
 	m.mu.Lock()
 	rt, ok := m.jobs[id]
 	if !ok {
