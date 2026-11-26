@@ -126,6 +126,7 @@ function trove_routes(): array {
         'job_retry'    => ['POST', 'POST', '/api/v1/jobs/{id}/retry', 30],
         'job_resolve'  => ['POST', 'POST', '/api/v1/jobs/{id}/resolve', 15],
         'job_events'   => ['GET', 'GET', '/api/v1/jobs/{id}/events', 15],
+        'debug_log'    => ['GET', 'GET', '/api/v1/debug/log', 15],
         'settings'     => ['GET', 'GET', '/api/v1/settings', 10],
         'settings_put' => ['POST', 'PUT', '/api/v1/settings', 15],
     ];

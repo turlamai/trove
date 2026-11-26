@@ -68,6 +68,7 @@ func routes(d Deps) http.Handler {
 	mux.HandleFunc("POST /api/v1/jobs/{id}/retry", d.handleJobRetry)
 	mux.HandleFunc("POST /api/v1/jobs/{id}/resolve", d.handleJobResolve)
 	mux.HandleFunc("GET /api/v1/jobs/{id}/events", d.handleJobEvents)
+	mux.HandleFunc("GET /api/v1/debug/log", d.handleDebugLog)
 	mux.HandleFunc("GET /api/v1/settings", d.handleSettingsGet)
 	mux.HandleFunc("PUT /api/v1/settings", d.handleSettingsPut)
 	return mux
@@ -672,6 +673,22 @@ func (d Deps) handleJobEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"events": evs})
+}
+
+// handleDebugLog tails the daemon log (development-preview diagnostic:
+// crashes leave their stderr stack traces there; endpoint goes away before
+// any stable release).
+func (d Deps) handleDebugLog(w http.ResponseWriter, r *http.Request) {
+	raw, err := os.ReadFile("/var/log/troved.log")
+	if err != nil {
+		writeErr(w, troveerr.Wrap(troveerr.IOFailure, err, "read log"))
+		return
+	}
+	log := string(raw)
+	if len(log) > 32*1024 {
+		log = log[len(log)-32*1024:]
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"log": log})
 }
 
 func (d Deps) handleSettingsGet(w http.ResponseWriter, r *http.Request) {
