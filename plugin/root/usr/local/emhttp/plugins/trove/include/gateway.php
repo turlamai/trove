@@ -217,9 +217,18 @@ if ($method !== 'GET') {
     if ($tokens === []) {
         trove_fail(403, 'CSRF_INVALID', 'security token unavailable; reload', true);
     }
-    $candidate = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_TROVE_CSRF'] ?? '';
+    // nginx strips the csrf_token body field after its check, so the
+    // verifiable credential is the X-Trove-Csrf header; body fields are
+    // accepted as fallbacks for non-nginx proxying.
+    $candidate = $_SERVER['HTTP_X_TROVE_CSRF'] ?? '';
+    if ($candidate === '' || !is_string($candidate)) {
+        $candidate = $_POST['token'] ?? '';
+    }
+    if ($candidate === '' || !is_string($candidate)) {
+        $candidate = $_POST['csrf_token'] ?? '';
+    }
     if (!is_string($candidate) || $candidate === '') {
-        trove_fail(403, 'CSRF_INVALID', 'invalid security token', true);
+        trove_fail(403, 'CSRF_INVALID', 'invalid security token (no credential)', true);
     }
     $ok = false;
     foreach ($tokens as $v) {
