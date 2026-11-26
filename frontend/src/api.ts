@@ -161,6 +161,7 @@ const TOKEN_HEADER = "X-Trove-Token";
 let boot = {
   api: "/plugins/trove/api.php",
   csrf: "",
+  unraidToken: "",
   token: "",
   version: "dev",
 };
@@ -189,8 +190,11 @@ async function request<T>(
   let body: string | undefined;
   if (method !== "GET") {
     headers[CSRF_HEADER] = boot.csrf;
+    // Unraid 7 nginx validates the `token` field (unraid_token) on POSTs;
+    // the gateway additionally accepts csrf_token/unraid_token values.
     body = new URLSearchParams({
       csrf_token: boot.csrf,
+      token: boot.unraidToken,
       payload: JSON.stringify(opts.body ?? {}),
     }).toString();
     headers["Content-Type"] = "application/x-www-form-urlencoded;charset=UTF-8";

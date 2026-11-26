@@ -10,6 +10,7 @@ import "./styles/trove.css";
 interface Boot {
   api: string;
   csrf: string;
+  unraidToken: string;
   version: string;
 }
 
@@ -29,6 +30,7 @@ function mount() {
   initApi({
     api: boot.api ?? "/plugins/trove/api.php",
     csrf: boot.csrf ?? "",
+    unraidToken: boot.unraidToken ?? "",
     version: boot.version ?? "dev",
   });
 

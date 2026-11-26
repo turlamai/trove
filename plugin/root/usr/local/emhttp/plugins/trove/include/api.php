@@ -44,9 +44,23 @@ function trove_fail(int $status, string $code, string $message, bool $recoverabl
 /**
  * Parse the emhttp var file for the current CSRF token.
  */
-function trove_csrf_token(): string {
+function trove_var_tokens(): array {
     $var = @parse_ini_file(TROVE_VAR_INI);
-    return is_array($var) && isset($var['csrf_token']) ? (string)$var['csrf_token'] : '';
+    if (!is_array($var)) {
+        return [];
+    }
+    $out = [];
+    foreach (['csrf_token', 'unraid_token'] as $k) {
+        if (isset($var[$k]) && is_string($var[$k]) && $var[$k] !== '') {
+            $out[$k] = $var[$k];
+        }
+    }
+    return $out;
+}
+
+function trove_csrf_token(): string {
+    $t = trove_var_tokens();
+    return $t['csrf_token'] ?? '';
 }
 
 function trove_same_origin(): bool {
@@ -192,15 +206,29 @@ if (!trove_same_origin()) {
     trove_fail(403, 'ORIGIN_REJECTED', 'cross-origin request rejected');
 }
 
-// Writes need the WebGUI CSRF token. Unraid's nginx already drops POSTs
-// whose `csrf_token` body field does not match var.ini — we validate the
-// same field ourselves (defense in depth); the X-Trove-Csrf header remains
-// accepted as an alternative channel.
+// Writes need the WebGUI CSRF token. Unraid 6.10+/7 nginx drops POSTs
+// whose `token` body field does not match var.ini's unraid_token, and
+// rewrites the csrf_token field to that value on the way through — so the
+// gateway accepts a match against EITHER var.ini token (both are served
+// only to authenticated WebGUI sessions; nginx already validated one of
+// them). The X-Trove-Csrf header stays accepted as an explicit channel.
 if ($method !== 'GET') {
-    $csrf = trove_csrf_token();
+    $tokens = trove_var_tokens();
+    if ($tokens === []) {
+        trove_fail(403, 'CSRF_INVALID', 'security token unavailable; reload', true);
+    }
     $candidate = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_TROVE_CSRF'] ?? '';
-    if ($csrf === '' || !is_string($candidate) || $candidate === ''
-        || !hash_equals($csrf, $candidate)) {
+    if (!is_string($candidate) || $candidate === '') {
+        trove_fail(403, 'CSRF_INVALID', 'invalid security token', true);
+    }
+    $ok = false;
+    foreach ($tokens as $v) {
+        if (hash_equals($v, $candidate)) {
+            $ok = true;
+            break;
+        }
+    }
+    if (!$ok) {
         trove_fail(403, 'CSRF_INVALID', 'invalid security token', true);
     }
 }

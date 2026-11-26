@@ -25,6 +25,7 @@ if ($plg) {
 }
 $var = @parse_ini_file('/var/local/emhttp/var.ini');
 $csrf = is_array($var) && isset($var['csrf_token']) ? (string)$var['csrf_token'] : '';
+$unraidToken = is_array($var) && isset($var['unraid_token']) ? (string)$var['unraid_token'] : '';
 $lang = isset($cfg['LANGUAGE']) && $cfg['LANGUAGE'] !== '' ? $cfg['LANGUAGE'] : '';
 ?>
 <div id="trove-root" class="trove"></div>
@@ -33,6 +34,7 @@ $lang = isset($cfg['LANGUAGE']) && $cfg['LANGUAGE'] !== '' ? $cfg['LANGUAGE'] : 
 window.__TROVE_BOOT__ = {
     api: "/plugins/trove/include/api.php",
     csrf: <?= json_encode($csrf) ?>,
+    unraidToken: <?= json_encode($unraidToken) ?>,
     version: <?= json_encode($version) ?>,
     language: <?= json_encode($lang) ?>
 };
