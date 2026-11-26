@@ -217,7 +217,7 @@ func (d Deps) handleEntries(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, troveerr.New(troveerr.BadRequest, "not a directory"))
 		return
 	}
-	dirFd, err := resolver.OpenDirNoFollow(res.ParentFd, res.Name)
+	dirFd, err := resolver.OpenResolvedDir(res)
 	if err != nil {
 		writeErr(w, troveerr.Wrap(troveerr.IOFailure, err, "open directory"))
 		return
