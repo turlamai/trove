@@ -1,8 +1,11 @@
 # Compatibility Matrix
 
-Verified against: **pending real-machine acceptance** (target server runs
-Unraid 7.x; specification §10 test matrix is the gate). Anything below is a
-design claim until the corresponding test passes.
+Verified against: **Unraid 7.3.3, first real-machine pass 2026-11-27**
+(see docs/acceptance/2026-11-27-unraid-7.3.3.md — install/upgrade chain,
+security matrix, copy/hash/delete with integrity evidence, plus eleven
+environment-driven defect fixes). The full §10 matrix (large-file resume,
+disk-full/kill/unmount injection, 100k listings) is still pending; the
+release remains a development preview.
 
 ## Unraid versions
 

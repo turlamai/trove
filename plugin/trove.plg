@@ -29,6 +29,9 @@
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
 - Read-only until a job data directory is configured (Settings → Trove).
+- First real-machine acceptance pass on Unraid 7.3.3: install/upgrade
+  chain, security matrix, copy integrity (SHA-256 verified) — see
+  docs/acceptance/ in the repository.
 </CHANGES>
 
 <!--
