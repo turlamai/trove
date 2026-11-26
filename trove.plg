@@ -56,7 +56,8 @@ exit 0
 -->
 <FILE Run="/bin/bash">
 <INLINE>
-/usr/local/emhttp/plugins/trove/scripts/start-daemon.sh >/dev/null 2>&1 &
+# (XML special characters are escaped for the plugin parser)
+/usr/local/emhttp/plugins/trove/scripts/start-daemon.sh &gt;/dev/null 2&gt;&amp;1 &amp;
 echo ""
 echo "------------------------------------------------------------"
 echo " Trove has been installed."
