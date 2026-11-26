@@ -355,6 +355,9 @@ func walkDirFD(dirfd int, name, rel string, cb WalkFunc, caps WalkCaps, depth in
 		deadline = time.Now().Add(time.Duration(caps.TimeBudgetN))
 	}
 
+	if name == "" {
+		name = "." // dirfd itself (resolving the root directory)
+	}
 	fd, err := OpenDirNoFollow(dirfd, name)
 	if err != nil {
 		// Unreadable subtree (permissions, vanished): report a partial scan

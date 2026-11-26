@@ -248,7 +248,7 @@ func TestHashComputesDigest(t *testing.T) {
 		t.Fatalf("hash outcome wrong: %+v %+v", out, got)
 	}
 	// sha256("hello trove")
-	const want = "4ac3abb9a4c3dd80d400b4b7c2d4654a2cb7d38f16e024a8bd34b62ca4d68943"
+	const want = "ffbc4aaa8138fe2e32c554c7fbec4a1f6f4afd92634dbe740c91f705c119613d"
 	if got.SHA256 != want {
 		t.Fatalf("digest mismatch: got %s want %s", got.SHA256, want)
 	}

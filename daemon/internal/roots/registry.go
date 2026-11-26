@@ -7,9 +7,11 @@ package roots
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/turlamai/trove/daemon/internal/model"
@@ -122,8 +124,10 @@ func (reg *Registry) List() []*Root {
 	return out
 }
 
-// Verify re-checks the mount identity of a root against the live mount
-// table. It refreshes the registry when its snapshot is older than 2 seconds.
+// Verify re-checks a root's mount identity, three ways: the registry must
+// still know the root, its snapshot must match the handle the caller holds
+// (plan-time identity), and a live stat of the trusted mount path must agree
+// with the snapshot (catches unmount/remount between refreshes).
 func (reg *Registry) Verify(r *Root) error {
 	reg.mu.RLock()
 	stale := time.Since(reg.loaded) > 2*time.Second
@@ -134,8 +138,21 @@ func (reg *Registry) Verify(r *Root) error {
 		}
 	}
 	reg.mu.RLock()
-	defer reg.mu.RUnlock()
 	cur, ok := reg.roots[r.Key()]
+	if ok {
+		if fi, err := os.Stat(r.Path); err == nil {
+			if st, ok2 := fi.Sys().(*syscall.Stat_t); ok2 && uint64(st.Dev) != cur.Dev {
+				reg.mu.RUnlock()
+				return troveerr.New(troveerr.MountChanged,
+					fmt.Sprintf("device identity changed for %s (dev %d→%d)",
+						r.Key(), cur.Dev, uint64(st.Dev)))
+			}
+		} else {
+			reg.mu.RUnlock()
+			return troveerr.New(troveerr.MountChanged, "root path no longer exists: "+r.Path)
+		}
+	}
+	defer reg.mu.RUnlock()
 	if !ok {
 		return troveerr.New(troveerr.MountChanged, "root no longer mounted: "+r.Key())
 	}

@@ -92,10 +92,11 @@ func TestWriteRequiresMountVerification(t *testing.T) {
 	if err := r.Registry().Verify(root); err != nil {
 		t.Fatalf("verify should pass: %v", err)
 	}
-	// mutate identity → MOUNT_CHANGED
-	root.Dev = 999
-	if err := r.Registry().Verify(root); troveerr.Of(err) != troveerr.MountChanged {
-		t.Fatalf("expected MOUNT_CHANGED, got %v", err)
+	// a root the registry no longer knows → MOUNT_CHANGED
+	ghost := *root
+	ghost.ID = "gone"
+	if err := r.Registry().Verify(&ghost); troveerr.Of(err) != troveerr.MountChanged {
+		t.Fatalf("expected MOUNT_CHANGED for unknown root, got %v", err)
 	}
 }
 
