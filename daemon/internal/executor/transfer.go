@@ -226,8 +226,13 @@ func (e *Executor) transferEntry(srcRes *resolver.Resolved, item *planner.Item,
 			if !ok {
 				return 0, nil
 			}
-			err = resolver.RenameAt(srcRes.ParentFd, srcRes.Name, dstDirFd, resolved,
-				resolver.RenameNoReplace)
+			if resolved == dstName {
+				// overwrite decision: atomic replace
+				err = resolver.RenameAt(srcRes.ParentFd, srcRes.Name, dstDirFd, dstName, 0)
+			} else {
+				err = resolver.RenameAt(srcRes.ParentFd, srcRes.Name, dstDirFd, resolved,
+					resolver.RenameNoReplace)
+			}
 		}
 		if err != nil {
 			return 0, troveerr.Wrap(troveerr.IOFailure, err, "move "+srcRes.Rel)
@@ -303,7 +308,12 @@ func (e *Executor) transferEntry(srcRes *resolver.Resolved, item *planner.Item,
 			h.Staging("", "")
 			return n, nil
 		}
-		err = resolver.RenameAt(dstDirFd, stagingName, dstDirFd, resolved, resolver.RenameNoReplace)
+		if resolved == dstName {
+			// overwrite decision: atomic replace of the fully verified file
+			err = resolver.RenameAt(dstDirFd, stagingName, dstDirFd, dstName, 0)
+		} else {
+			err = resolver.RenameAt(dstDirFd, stagingName, dstDirFd, resolved, resolver.RenameNoReplace)
+		}
 	}
 	if err != nil {
 		return n, troveerr.Wrap(troveerr.IOFailure, err, "commit "+dstRel)
@@ -566,7 +576,7 @@ func uniqueName(dirfd int, name string) string {
 	if i := lastDot(name); i > 0 {
 		base, ext = name[:i], name[i:]
 	}
-	for n := 2; n < 1000; n++ {
+	for n := 1; n < 1000; n++ {
 		cand := base + " (" + itoa(n) + ")" + ext
 		if _, err := resolver.FstatAt(dirfd, cand); err != nil {
 			return cand
