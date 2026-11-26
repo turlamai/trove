@@ -2,12 +2,12 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "0.1.0">
+<!ENTITY version     "0.1.1">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "0df166c4e8954c696e59a8e89691377a9c3daaca8187ca5fef0246e895b5e2c4">
+<!ENTITY packageSHA  "10dcebcf6970c62152bb525ad4a1d3528b6ef804597173ab6e3f4c30e3e9176d">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -15,7 +15,7 @@
 <PLUGIN name="&name;"
         author="&author;"
         version="&version;"
-        launch="Tools/Trove"
+        launch="Tools/trove"
         pluginURL="&pluginURL;"
         icon="folder-open"
         min="7.0.0"
@@ -24,7 +24,7 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
-### 0.1.0
+### 0.1.1
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
