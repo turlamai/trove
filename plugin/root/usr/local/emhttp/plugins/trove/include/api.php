@@ -229,7 +229,20 @@ if ($method !== 'GET') {
         }
     }
     if (!$ok) {
-        trove_fail(403, 'CSRF_INVALID', 'invalid security token', true);
+        // TEMP DIAGNOSTIC (v0.1.6): identifies which field survived the
+        // trip through nginx; removed in the next release.
+        $have = [];
+        foreach ($tokens as $k => $v) {
+            $have[] = $k . ':' . strlen($v);
+        }
+        $dbg = sprintf(
+            'debug: candidate post.csrf=%s post.token=%s hdr=%s | var.ini %s',
+            strlen((string)($_POST['csrf_token'] ?? '')),
+            strlen((string)($_POST['token'] ?? '')),
+            strlen((string)($_SERVER['HTTP_X_TROVE_CSRF'] ?? '')),
+            implode(',', $have)
+        );
+        trove_fail(403, 'CSRF_INVALID', 'invalid security token; ' . $dbg, true);
     }
 }
 
