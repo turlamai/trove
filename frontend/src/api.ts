@@ -256,7 +256,7 @@ export const api = {
       body: { planId, token, decision: decision ?? "" },
     }),
   submitJob: (planId: string, token: string, clientRequestId?: string) =>
-    request<Job>("POST", "jobs", { body: { planId, token, clientRequestId } }),
+    request<Job>("POST", "job_submit", { body: { planId, token, clientRequestId } }),
   jobs: (limit = 50) => request<{ jobs: Job[] }>("GET", "jobs", { query: { limit } }),
   job: (id: string) => request<Job>("GET", "jobs/" + encodeURIComponent(id)),
   cancelJob: (id: string) =>

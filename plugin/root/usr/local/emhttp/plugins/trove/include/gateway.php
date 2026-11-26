@@ -120,6 +120,7 @@ function trove_routes(): array {
         'plan'         => ['POST', 'POST', '/api/v1/operations/plan', 90],
         'execute'      => ['POST', 'POST', '/api/v1/operations/execute', 30],
         'jobs'         => ['GET', 'GET', '/api/v1/jobs', 10],
+        'job_submit'   => ['POST', 'POST', '/api/v1/jobs', 30],
         'job'          => ['GET', 'GET', '/api/v1/jobs/{id}', 15],
         'job_cancel'   => ['POST', 'POST', '/api/v1/jobs/{id}/cancel', 15],
         'job_retry'    => ['POST', 'POST', '/api/v1/jobs/{id}/retry', 30],
@@ -238,20 +239,7 @@ if ($method !== 'GET') {
         }
     }
     if (!$ok) {
-        // TEMP DIAGNOSTIC (v0.1.6): identifies which field survived the
-        // trip through nginx; removed in the next release.
-        $have = [];
-        foreach ($tokens as $k => $v) {
-            $have[] = $k . ':' . strlen($v);
-        }
-        $dbg = sprintf(
-            'debug: candidate post.csrf=%s post.token=%s hdr=%s | var.ini %s',
-            strlen((string)($_POST['csrf_token'] ?? '')),
-            strlen((string)($_POST['token'] ?? '')),
-            strlen((string)($_SERVER['HTTP_X_TROVE_CSRF'] ?? '')),
-            implode(',', $have)
-        );
-        trove_fail(403, 'CSRF_INVALID', 'invalid security token; ' . $dbg, true);
+        trove_fail(403, 'CSRF_INVALID', 'invalid security token', true);
     }
 }
 
