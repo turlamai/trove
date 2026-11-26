@@ -90,6 +90,12 @@ func (e *Executor) Transfer(man *planner.Manifest, h *Hooks) (*Outcome, error) {
 		return out, troveerr.New(troveerr.PlanMismatch, "plan lost its root item")
 	}
 	if err := e.checkIdentity(&rootItem, &srcRes.Stat, man.SourceRel, man, h); err != nil {
+		if errors.Is(err, resolver.WalkSkipDir) {
+			// source replaced/modified since planning (skip policy): the
+			// warning is already recorded — nothing is transferred, the
+			// source stays untouched, the job completes
+			return out, nil
+		}
 		return out, err
 	}
 	rootDst := dstBase
