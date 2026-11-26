@@ -231,10 +231,32 @@ func RmdirAt(dirfd int, name string) error {
 // RenameNoReplace atomically refuses an existing target (renameat2 flag).
 const RenameNoReplace = 1
 
-// RenameAt renames within/between verified dirfds. When the kernel lacks
-// renameat2 it fails closed — Unraid 7 kernels (6.x) have it.
+// RenameAt renames within/between verified dirfds. When the kernel or the
+// filesystem lacks renameat2 flag support (FUSE/shfs returns
+// EINVAL/ENOSYS/EOPNOTSUPP), the no-replace variant falls back to an
+// existence probe plus a plain rename — the caller's EEXIST handling and
+// conflict policy still govern the outcome; the window between probe and
+// rename is single-writer by default concurrency (documented in the
+// compatibility matrix). Flagless renames are always passed through
+// unchanged.
 func RenameAt(srcFd int, srcName string, dstFd int, dstName string, flags int) error {
-	return unix.Renameat2(srcFd, srcName, dstFd, dstName, uint(flags))
+	err := unix.Renameat2(srcFd, srcName, dstFd, dstName, uint(flags))
+	if err == nil || flags == 0 {
+		return err
+	}
+	if !(errors.Is(err, unix.EINVAL) || errors.Is(err, unix.ENOSYS) ||
+		errors.Is(err, unix.EOPNOTSUPP) || errors.Is(err, unix.EPERM)) {
+		return err
+	}
+	if flags&RenameNoReplace != 0 {
+		if _, err2 := FstatAt(dstFd, dstName); err2 == nil {
+			return unix.EEXIST
+		} else if !os.IsNotExist(err2) {
+			return err2
+		}
+		return unix.Renameat(srcFd, srcName, dstFd, dstName)
+	}
+	return err
 }
 
 // StatFSAt reports (total, avail) bytes for the filesystem holding path.
