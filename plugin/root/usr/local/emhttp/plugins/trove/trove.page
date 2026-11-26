@@ -14,8 +14,14 @@ if (!is_array($cfg)) {
 }
 $version = 'dev';
 $plg = @file_get_contents("/var/log/plugins/{$plugin}.plg");
-if ($plg && preg_match('/version\s*=\s*"([^"]+)"/', $plg, $m)) {
-    $version = $m[1];
+if ($plg) {
+    // the installed manifest keeps XML entities unresolved; prefer the
+    // ENTITY definition, fall back to the PLUGIN attribute
+    if (preg_match('/<!ENTITY version\s+"([^"]+)"/', $plg, $m)) {
+        $version = $m[1];
+    } elseif (preg_match('/version\s*=\s*"([^"]+)"/', $plg, $m)) {
+        $version = $m[1];
+    }
 }
 $var = @parse_ini_file('/var/local/emhttp/var.ini');
 $csrf = is_array($var) && isset($var['csrf_token']) ? (string)$var['csrf_token'] : '';
