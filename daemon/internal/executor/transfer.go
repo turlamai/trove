@@ -101,6 +101,11 @@ func (e *Executor) Transfer(man *planner.Manifest, h *Hooks) (*Outcome, error) {
 	case model.EntryFile:
 		n, err := e.transferEntry(srcRes, &rootItem, man.TargetRoot, dstDirFd, rootDst, man, h, out, sameDev)
 		if err != nil {
+			if errors.Is(err, resolver.WalkSkipDir) {
+				// source replaced/changed since planning — already warned;
+				// the job completes (with warnings), source untouched
+				return out, nil
+			}
 			return out, err
 		}
 		out.Items++
