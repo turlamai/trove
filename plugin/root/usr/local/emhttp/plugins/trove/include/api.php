@@ -50,24 +50,40 @@ function trove_csrf_token(): string {
 }
 
 function trove_same_origin(): bool {
-    $host = $_SERVER['HTTP_HOST'] ?? '';
+    $host = (string)($_SERVER['HTTP_HOST'] ?? '');
     if ($host === '') {
         return false;
     }
-    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    // HTTP_HOST keeps the port ("nas.local:1996"); compare host AND port.
+    $hparts = explode(':', $host, 2);
+    $hhost = strtolower($hparts[0]);
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+        $scheme = strtolower(explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'])[0]);
+    }
+    $hport = isset($hparts[1])
+        ? (int)$hparts[1]
+        : (int)($_SERVER['SERVER_PORT'] ?? ($scheme === 'https' ? 443 : 80));
+
+    $origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
     if ($origin !== '') {
-        $p = parse_url($origin);
+        $p = @parse_url($origin);
+        if (!isset($p['scheme'], $p['host'])) {
+            return false;
+        }
+        $oport = (int)($p['port'] ?? (strtolower((string)$p['scheme']) === 'https' ? 443 : 80));
+        return strtolower((string)$p['scheme']) === $scheme
+            && strtolower((string)$p['host']) === $hhost
+            && $oport === $hport;
+    }
+    $referer = (string)($_SERVER['HTTP_REFERER'] ?? '');
+    if ($referer !== '') {
+        $p = @parse_url($referer);
         if (!isset($p['host'])) {
             return false;
         }
-        $oport = $p['port'] ?? ($p['scheme'] === 'https' ? 443 : 80);
-        $hport = (int)(($_SERVER['SERVER_PORT'] ?? 80));
-        return strcasecmp((string)$p['host'], (string)$host) === 0;
-    }
-    $referer = $_SERVER['HTTP_REFERER'] ?? '';
-    if ($referer !== '') {
-        $p = parse_url($referer);
-        return isset($p['host']) && strcasecmp((string)$p['host'], (string)$host) === 0;
+        $rport = (int)($p['port'] ?? (strtolower((string)($p['scheme'] ?? 'http')) === 'https' ? 443 : 80));
+        return strtolower((string)$p['host']) === $hhost && $rport === $hport;
     }
     // No Origin/Referer at all: same-origin fetches may omit them for GET;
     // writes are additionally protected by the CSRF header below.
