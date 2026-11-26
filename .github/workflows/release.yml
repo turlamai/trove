@@ -60,10 +60,10 @@ jobs:
           git config user.name "trove-release-bot"
           git config user.email "bot@trove.invalid"
           cp dist/trove.plg trove.plg
-          if git diff --quiet trove.plg; then
-            echo "plugin manifest unchanged"
-          else
+          if [ -n "$(git status --porcelain trove.plg)" ]; then
             git add trove.plg
             git commit -m "release: plugin manifest ${{ github.ref_name }}"
             git push origin HEAD:main
+          else
+            echo "plugin manifest unchanged"
           fi
