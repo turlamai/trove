@@ -73,7 +73,7 @@ func (e *Executor) Transfer(man *planner.Manifest, h *Hooks) (*Outcome, error) {
 		return out, troveerr.New(troveerr.NotWritable, "target directory is missing")
 	}
 	// Open the target directory body (final component: no symlink follow).
-	dstDirFd, err := resolver.OpenDirNoFollow(dstRes.ParentFd, dstRes.Name)
+	dstDirFd, err := resolver.OpenResolvedDir(dstRes)
 	if err != nil {
 		return out, troveerr.Wrap(troveerr.IOFailure, err, "open target dir "+man.TargetDir)
 	}

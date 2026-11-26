@@ -68,6 +68,16 @@ func Openat2Beneath(dirfd int, rel string) (int, error) {
 	})
 }
 
+// OpenResolvedDir opens the directory body of a resolved entry (the root
+// itself when the final component is empty).
+func OpenResolvedDir(res *Resolved) (int, error) {
+	name := res.Name
+	if name == "" {
+		name = "."
+	}
+	return OpenDirNoFollow(res.ParentFd, name)
+}
+
 // CloseFD closes a raw descriptor.
 func CloseFD(fd int) {
 	if fd >= 0 {

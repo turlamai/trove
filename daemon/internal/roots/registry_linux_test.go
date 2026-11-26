@@ -5,6 +5,7 @@ package roots
 import (
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 
@@ -19,6 +20,12 @@ func TestVerifyDetectsRemount(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(dir, "s"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+	realDev := uint64(1)
+	if st, err := os.Stat(dir); err == nil {
+		if sys, ok := st.Sys().(*syscall.Stat_t); ok {
+			realDev = uint64(sys.Dev)
+		}
+	}
 	mk := func(dev uint64, mountID uint32) map[string]*Root {
 		r := &Root{
 			Ref: model.KindShare, ID: "s", Path: dir,
@@ -26,7 +33,7 @@ func TestVerifyDetectsRemount(t *testing.T) {
 		}
 		return map[string]*Root{r.Key(): r}
 	}
-	current := mk(1, 1)
+	current := mk(realDev, 1)
 	reg := &Registry{
 		roots:  current,
 		loaded: time.Now(),
@@ -43,8 +50,8 @@ func TestVerifyDetectsRemount(t *testing.T) {
 		t.Fatalf("verify should pass before remount: %v", err)
 	}
 
-	// remount: new dev + mount id
-	current = mk(999, 42)
+	// remount: same device re-mounted under a new mount id
+	current = mk(realDev, 42)
 	reg.mu.Lock()
 	reg.loaded = time.Time{} // force refresh
 	reg.mu.Unlock()

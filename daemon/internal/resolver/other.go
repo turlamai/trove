@@ -24,6 +24,7 @@ func FstatAt(int, string) (*StatInfo, error) { return nil, unsupported("FstatAt"
 func ReadLinkAt(int, string) (string, error) { return "", unsupported("ReadLinkAt") }
 func ListDir(int) ([]DirEntry, error) { return nil, unsupported("ListDir") }
 func OpenDirNoFollow(int, string) (int, error) { return -1, unsupported("OpenDirNoFollow") }
+func OpenResolvedDir(*Resolved) (int, error) { return -1, unsupported("OpenResolvedDir") }
 func OpenFileNoFollow(int, string, int, uint32) (int, error) { return -1, unsupported("OpenFileNoFollow") }
 func CreateFileExclusive(int, string, uint32) (int, error) { return -1, unsupported("CreateFileExclusive") }
 func MkdirAt(int, string, uint32) error { return unsupported("MkdirAt") }
