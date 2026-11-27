@@ -142,6 +142,70 @@ function trove_routes(): array {
 }
 
 /**
+ * Relay a media stream byte-for-byte: forward the client's Range header,
+ * pass the daemon's status and media headers back untouched, and echo
+ * chunks as they arrive (no buffering — a multi-GB video must never sit
+ * in a php-fpm worker's memory).
+ */
+function trove_stream_forward(string $daemonPath, string $query): void {
+    $token = @file_get_contents(TROVE_TOKEN_FILE);
+    if ($token === false || $token === '') {
+        trove_fail(503, 'GATEWAY', 'daemon token unavailable');
+    }
+    $token = trim($token);
+    $url = 'http://troved' . $daemonPath . ($query !== '' ? '?' . $query : '');
+
+    while (ob_get_level() > 0) { @ob_end_flush(); }
+    header('X-Accel-Buffering: no');
+    header_remove('Content-Type');
+
+    $headers = ['X-Trove-Token: ' . $token, 'Connection: close'];
+    if (isset($_SERVER['HTTP_RANGE']) && is_string($_SERVER['HTTP_RANGE']) && preg_match('/^bytes=\d*-\d*$/', $_SERVER['HTTP_RANGE'])) {
+        $headers[] = 'Range: ' . $_SERVER['HTTP_RANGE'];
+    }
+
+    $sentStatus = false;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_UNIX_SOCKET_PATH => TROVE_SOCKET,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_HEADERFUNCTION => function ($ch, string $line) use (&$sentStatus) {
+            $len = strlen($line);
+            $t = trim($line);
+            if ($t === '') {
+                return $len;
+            }
+            if (!$sentStatus && stripos($t, 'HTTP/') === 0) {
+                if (preg_match('/\s(\d{3})\s*$/', $t, $m)) {
+                    http_response_code((int)$m[1]);
+                }
+                $sentStatus = true;
+                return $len;
+            }
+            if (preg_match('/^(Content-Type|Content-Length|Content-Range|Accept-Ranges|Content-Disposition|Last-Modified|ETag):/i', $t)) {
+                header($t);
+            }
+            return $len;
+        },
+        CURLOPT_WRITEFUNCTION => function ($ch, string $chunk) {
+            echo $chunk;
+            @flush();
+            return strlen($chunk);
+        },
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 0,
+    ]);
+    curl_exec($ch);
+    $errno = curl_errno($ch);
+    curl_close($ch);
+    if ($errno !== 0 && !$sentStatus) {
+        trove_fail(503, 'GATEWAY', 'daemon unreachable during stream');
+    }
+    exit;
+}
+
+/**
  * Forward the request to the daemon; retry once after an on-demand start.
  */
 function trove_forward(string $method, string $daemonPath, string $query, string $body, int $timeout): string {
@@ -382,6 +446,14 @@ if ($cmd === 'download') {
     header_remove('Content-Type');
     header('Content-Type: application/octet-stream');
     header('X-Content-Type-Options: nosniff');
+}
+
+// stream must be a byte relay, not a buffered forward: the generic path
+// holds the whole file in PHP memory, swallows the Range request and the
+// daemon's 206/Content-Range replies, and reports the wrong Content-Type —
+// unseekable playback plus a memory ceiling per media request.
+if ($cmd === 'stream') {
+    trove_stream_forward($finalPath, $query);
 }
 
 echo trove_forward($daemonMethod, $finalPath, $query, $body, $timeout);

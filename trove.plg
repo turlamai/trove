@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.21">
+<!ENTITY version     "2026.12.22">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,14 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.22
+- Fix: media streaming went through the buffered JSON forward — the
+  whole file sat in PHP memory, Range requests and the daemon's
+  206/Content-Range replies never reached the client, and the
+  Content-Type was wrong, so video/audio preview was unseekable and
+  capped per worker. The gateway now relays the stream byte-for-byte
+  with header passthrough and disables nginx buffering for it.
+
 ### 2026.12.21
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
