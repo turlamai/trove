@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "098c9da74f0096252b92f1ea364e4a289f79556e47ebe7e357a02cda37091344">
+<!ENTITY packageSHA  "1a4823b9d5df99222bc4636326f937549a22bc010b8dcb5fbbddee784df888ae">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,16 +25,6 @@
 
 <CHANGES>
 ### 2026.12.35
-- Follow the container pattern that the 7.3 Settings/Tools pages
-  actually render: content pages must be members of a menu-type
-  container. Trove Settings joins the System Settings group
-  (Menu="OtherSettings" — the same container as Disk Settings, Tailscale),
-  and the Tools listing gets a Trove container card
-  (Menu="Tools:50" Type="menu", the About/disklocation pattern) with
-  the file manager as its member. Nothing renders inline anywhere;
-  everything expands after a click, like every native entry.
-
-### 2026.12.34
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
