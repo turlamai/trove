@@ -227,6 +227,7 @@ const en: Record<string, string> = {
   "nav.devices": "Storage devices (physical view)",
   "nav.protected": "System shares",
   "nav.more": "More",
+  "nav.trash": "Trash",
   "tb.refresh": "Refresh",
   "tb.newFolder": "New folder",
   "tb.view": "List view",
