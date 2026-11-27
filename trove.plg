@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "884d8c1a3de70ab0915960403ba3e860c4592570b0e7f94d5e37d65979ad736a">
+<!ENTITY packageSHA  "cb872f8de35836d983dbc34e5e29fbda8462a7652b2e435bef0699b22883e676">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,11 +25,6 @@
 
 <CHANGES>
 ### 2026.12.37
-- Add the FontAwesome Tag attribute to the Tools entry card — the
-  responsive card grid renders icons from Tag (a class name); a page
-  without it was dropped from the listing entirely.
-
-### 2026.12.36
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
