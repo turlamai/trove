@@ -63,7 +63,13 @@ jobs:
           if [ -n "$(git status --porcelain trove.plg)" ]; then
             git add trove.plg
             git commit -m "release: plugin manifest ${{ github.ref_name }}"
-            git push origin HEAD:main
+            # main may have moved while this run built the tag — rebase on
+            # top of it and retry instead of failing the whole release
+            for i in 1 2 3; do
+              if git push origin HEAD:main; then break; fi
+              git fetch origin main
+              git rebase origin/main || git rebase --abort
+            done
           else
             echo "plugin manifest unchanged"
           fi
