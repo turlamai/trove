@@ -24,9 +24,13 @@ What it does:
 - **Storage-safety checks** — share↔disk namespace mixing is refused with an explainer (not a warning you can click through); same-file aliases, recursive targets and source mutation are caught server-side
 - **Conflict handling** — per-item skip / overwrite / keep-both decisions with source↔target comparison; overwrite is never the default
 - **Inspector** — verified metadata only; what cannot be verified is shown as "unknown"
+- **Share links** — no-login download links for single files, optional password and expiry, served by a dedicated listener (LAN-only by default), download-audited
+- **Folder ZIP download** — streaming archive with size/entry caps; media types stored uncompressed
+- **In-browser media preview** — seekable video/audio via a byte-relayed Range stream; image/text/PDF previews
+- **Recycle bin** — user-share deletes land in `.trove-trash/` with restore (conflict auto-rename) and purge
 - **zh-CN / English UI**, keyboard-driven, follows the Unraid light/dark theme
 
-What it deliberately does not do (yet): upload, previews, thumbnails, recycle bin, and any write into `appdata`/`domains`/`system`/`isos` without explicit confirmation. See [docs/compatibility-matrix.md](docs/compatibility-matrix.md).
+What it deliberately does not do (yet): thumbnails, folder share links (files only), and any write into `appdata`/`domains`/`system`/`isos` without explicit confirmation. See [docs/compatibility-matrix.md](docs/compatibility-matrix.md).
 
 ## Install (development preview)
 
@@ -84,8 +88,8 @@ The Linux syscall layer (openat2 containment, executor semantics) is covered by 
 
 ## Status & roadmap
 
-- **V1 + V1.5 core (this preview)** — browsing, dual-pane, safe operations, task center, settings, i18n, **upload, image/text/PDF previews, per-share trash (restore/purge), dashboard tile**
-- **Next** — batch rename preview, archives, range-based media preview
+- **V1 + V1.5 (this preview)** — browsing, dual-pane, safe operations, task center, settings, i18n, upload, previews, per-share trash, dashboard tile, **share links, folder ZIP download, seekable media streaming**
+- **Next** — batch rename preview, folder share links, upload resume
 - Physical-view writes stay disabled by default; cross-view mixing stays refused unconditionally
 
 ## License
