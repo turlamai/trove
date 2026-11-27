@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "2dbf69bd744349f37f6039365b0cc4d371bd84fa5657acd6b6a7f99c776ca302">
+<!ENTITY packageSHA  "4f79d173618406de354dd936bcbc38b4b83633bcd62e8bc681bb614f9f7d07c8">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,12 +25,6 @@
 
 <CHANGES>
 ### 2026.12.21
-- Fix: share creation accepted the client's "rootId" string but only
-  decoded the structured "root" field, so every link was created with an
-  empty root reference and its public URL could never resolve. Accept
-  both forms and reject unknown root kinds up front.
-
-### 2026.12.20
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
