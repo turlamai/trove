@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "438ff2a8345590c3e1133512caa00468171d673cdaf6b8a34f62e093bb131fbc">
+<!ENTITY packageSHA  "3d923b09fa53d83d24d4130d7a5312461e67742da0e3848a360ff5082961853e">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,10 +25,6 @@
 
 <CHANGES>
 ### 2026.12.26
-- Fix: the English UI leaked a Chinese label in the sidebar (the trash
-  entry had no English translation).
-
-### 2026.12.25
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
