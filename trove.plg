@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.31">
+<!ENTITY version     "2026.12.32">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,15 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.32
+- Stop expanding our pages inline on the section listing pages. A
+  content page registered as Menu="Settings"/Menu="Tools" without a
+  type is rendered inline into the listing; the standard dynamix
+  pattern (cf. Utilities.page) is Type="menu", which shows a titled
+  card users click to reach the full page. Both the settings form and
+  the file manager now behave exactly like every native entry: a card
+  on the section page, configuration on its own page.
+
 ### 2026.12.31
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
