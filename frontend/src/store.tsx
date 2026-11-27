@@ -188,7 +188,6 @@ export function AppProvider({ children }: { children: preact.ComponentChildren }
     setUploadsState((u) => [...u, ...batch]);
     // 逐个顺序上传（并发 1，避免占满上行）
     (async () => {
-      const { api } = await import("./api");
       for (const t of batch) {
         try {
           await api.uploadFile({
