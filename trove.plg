@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "5f0220defca91a8cc1133de1c688947b816676405e69b226eff20fda0d3ea5f3">
+<!ENTITY packageSHA  "a92519e5e020d04b9a683edf0bf6d51d139e3fe708041fef3c1775bedd7bcf41">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,15 +25,6 @@
 
 <CHANGES>
 ### 2026.12.32
-- Stop expanding our pages inline on the section listing pages. A
-  content page registered as Menu="Settings"/Menu="Tools" without a
-  type is rendered inline into the listing; the standard dynamix
-  pattern (cf. Utilities.page) is Type="menu", which shows a titled
-  card users click to reach the full page. Both the settings form and
-  the file manager now behave exactly like every native entry: a card
-  on the section page, configuration on its own page.
-
-### 2026.12.31
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
