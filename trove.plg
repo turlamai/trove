@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.26">
+<!ENTITY version     "2026.12.27">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,15 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.27
+- Fix: delete (and every other planned operation — copy, move, hash)
+  failed from the UI with a "Not found" toast and no confirmation
+  dialog: the frontend posted to cmd=operations/plan and
+  cmd=operations/execute, but the gateway route table keys are "plan"
+  and "execute", so every plan call 404'd before reaching the daemon.
+  A regression from a route-key rename; the V1.5 features shipped after
+  it used separate endpoints and masked the breakage.
+
 ### 2026.12.26
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with

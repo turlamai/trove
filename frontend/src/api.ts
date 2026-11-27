@@ -313,9 +313,9 @@ export const api = {
     ackProtected?: boolean;
     purge?: boolean;
     clientRequestId?: string;
-  }) => request<Plan>("POST", "operations/plan", { body: req }),
+  }) => request<Plan>("POST", "plan", { body: req }),
   execute: (planId: string, token: string, decision?: string) =>
-    request<{ status: string }>("POST", "operations/execute", {
+    request<{ status: string }>("POST", "execute", {
       body: { planId, token, decision: decision ?? "" },
     }),
   submitJob: (planId: string, token: string | undefined, clientRequestId?: string) =>
