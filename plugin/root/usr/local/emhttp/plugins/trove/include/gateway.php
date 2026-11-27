@@ -132,7 +132,7 @@ function trove_routes(): array {
         'trash_restore'=> ['POST', 'POST', '/api/v1/trash/restore', 15],
         'shares'       => ['GET', 'GET', '/api/v1/shares', 15],
         'shares_create'=> ['POST', 'POST', '/api/v1/shares', 15],
-        'shares_revoke'=> ['POST', '/api/v1/shares/revoke', 15],
+        'shares_revoke'=> ['POST', 'POST', '/api/v1/shares/revoke', 15],
         'zip'          => ['GET', 'GET', '/api/v1/zip', 3600],
         'stream'       => ['GET', 'GET', '/api/v1/stream', 0],
         'debug_log'    => ['GET', 'GET', '/api/v1/debug/log', 15],
