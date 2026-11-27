@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "dff35f5100205fae1a3c8d657deb6eeb1cbd8ddb0cfe6f246578bab647ea02c8">
+<!ENTITY packageSHA  "84de28925eff78a9d8efb8858f592a7e4b3e4d7a609a56b59f1391daf070c8d5">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,14 +25,6 @@
 
 <CHANGES>
 ### 2026.12.40
-- Restore the Trove container card (removed by mistake in .39): the
-  "Trove" card in Settings → User Utilities IS the container page
-  (Menu="Tools:50" Type="menu") whose member is the file manager
-  itself — deleting it removed the entry while leaving its member
-  unreachable from the listing. Container card back; file manager and
-  settings cards both visible again.
-
-### 2026.12.39
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
