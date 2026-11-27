@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.20">
+<!ENTITY version     "2026.12.21">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,12 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.21
+- Fix: share creation accepted the client's "rootId" string but only
+  decoded the structured "root" field, so every link was created with an
+  empty root reference and its public URL could never resolve. Accept
+  both forms and reject unknown root kinds up front.
+
 ### 2026.12.20
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with

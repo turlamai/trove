@@ -706,7 +706,8 @@ func (d Deps) handleSharesCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Root       model.RootRef `json:"root"`
+		RootID     string        `json:"rootId"` // client form: "kind:id"
+		Root       model.RootRef `json:"root"`   // structured form
 		Path       string        `json:"path"`
 		ExpiryDays int           `json:"expiryDays"`
 		Password   string        `json:"password"`
@@ -714,6 +715,25 @@ func (d Deps) handleSharesCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := decodeBody(r, &body); err != nil {
 		writeErr(w, err)
+		return
+	}
+	ref := body.Root
+	if body.RootID != "" {
+		kind, id, ok := strings.Cut(body.RootID, ":")
+		if !ok {
+			writeErr(w, troveerr.New(troveerr.BadRequest, "rootId must be kind:id"))
+			return
+		}
+		ref = model.RootRef{Kind: model.RootKind(kind), ID: id}
+	}
+	switch ref.Kind {
+	case model.KindShare, model.KindDisk, model.KindPool:
+	default:
+		writeErr(w, troveerr.New(troveerr.BadRequest, "share requires a valid root kind"))
+		return
+	}
+	if ref.ID == "" {
+		writeErr(w, troveerr.New(troveerr.BadRequest, "share requires a root id"))
 		return
 	}
 	if body.Path == "" {
@@ -733,7 +753,7 @@ func (d Deps) handleSharesCreate(w http.ResponseWriter, r *http.Request) {
 		t := time.Now().UTC().AddDate(0, 0, body.ExpiryDays)
 		expiresAt = &t
 	}
-	sh, err := d.Shares.Create(body.Root, body.Path, path.Base("/"+body.Path), expiresAt, body.Password, body.Note)
+	sh, err := d.Shares.Create(ref, body.Path, path.Base("/"+body.Path), expiresAt, body.Password, body.Note)
 	if err != nil {
 		writeErr(w, err)
 		return
