@@ -1226,3 +1226,38 @@
   outline: 2px solid var(--tv-primary);
   outline-offset: 1px;
 }
+
+/* compact segmented pane toggle (top-right) */
+.tv-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--tv-bg-muted);
+  border: 1px solid var(--tv-border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.tv-segbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 22px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--tv-text-dimmed);
+  cursor: pointer;
+  padding: 0;
+}
+.tv-segbtn:hover {
+  color: var(--tv-text);
+}
+.tv-segbtn.active {
+  background: var(--tv-bg);
+  color: var(--tv-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.trove--dark .tv-segbtn.active {
+  color: var(--tv-primary);
+}

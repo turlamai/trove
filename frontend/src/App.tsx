@@ -606,25 +606,22 @@ export function App() {
 
         {/* workspace */}
         <div class="tv-work">
-          {/* header strip: pane toggle only — the WebGUI chrome owns the
-              page title, so the app starts directly with content */}
-          <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none">
-            <div style="display:flex;gap:4px;border:1px solid var(--tv-border-strong);border-radius:6px;padding:2px">
+          {/* header strip: compact pane toggle — WebGUI chrome owns the title */}
+          <div style="display:flex;align-items:center;justify-content:flex-end;flex:none">
+            <div class="tv-seg" role="group" aria-label={t("tb.single") + "/" + t("tb.dual")}>
               <button
-                class={"tv-btn seg" + (!dual ? " active" : "")}
-                style="border:0"
+                class={"tv-segbtn" + (!dual ? " active" : "")}
                 onClick={() => setDual(false)}
                 title={t("tb.single")}
               >
-                <IconSingle size={14} />
+                <IconSingle size={13} />
               </button>
               <button
-                class={"tv-btn seg" + (dual ? " active" : "")}
-                style="border:0"
+                class={"tv-segbtn" + (dual ? " active" : "")}
                 onClick={() => setDual(true)}
                 title={t("tb.dual")}
               >
-                <IconDual size={14} />
+                <IconDual size={13} />
               </button>
             </div>
           </div>

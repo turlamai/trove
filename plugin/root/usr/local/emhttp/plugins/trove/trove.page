@@ -1,7 +1,7 @@
-Menu="Tools"
+Menu="Trove"
 Title="Trove"
 Icon="trove.png"
-Type="php"
+Type="xmenu"
 ---
 <?php
 // Trove — native file manager for Unraid (main page).

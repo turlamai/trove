@@ -15,7 +15,7 @@
 <PLUGIN name="&name;"
         author="&author;"
         version="&version;"
-        launch="Tools/trove"
+        launch="Trove/trove"
         pluginURL="&pluginURL;"
         icon="folder-open"
         min="7.0.0"
