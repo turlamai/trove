@@ -83,33 +83,27 @@ func TestTrashNameConflictAutoRename(t *testing.T) {
 	}
 	del("a.txt")
 
-	_, infos1, err := e.TrashList(model.RootRef{Kind: model.KindShare, ID: "src"})
-	if err != nil || len(infos1) != 1 {
-		t.Fatalf("trash list: %v %+v", err, infos1)
-	}
-	// 恢复 a.txt 回原位（内容 "first"）
-	if _, err := e.TrashRestore(model.RootRef{Kind: model.KindShare, ID: "src"}, infos1[0].Name); err != nil {
-		t.Fatalf("restore 1: %v", err)
-	}
+	// 删除后原位置重新出现同名文件（例如另一个进程/同步工具写入）→
+	// 此时恢复即产生名字冲突 → 自动改名 "a (1).txt" 保留两者。
+	write(t, src, "a.txt", "recreated by another writer")
 
-	// 原位置再次被占用：写入不同内容，再删（进回收站）。
-	// 恢复时 "a.txt" 已被占用 → 冲突自动改名 "a (1).txt"。
-	write(t, src, "a.txt", "second version")
-	del("a.txt")
-	_, infos2, err := e.TrashList(model.RootRef{Kind: model.KindShare, ID: "src"})
-	if err != nil || len(infos2) != 1 {
-		t.Fatalf("trash list 2: %v %+v", err, infos2)
+	_, infos, err := e.TrashList(model.RootRef{Kind: model.KindShare, ID: "src"})
+	if err != nil || len(infos) != 1 {
+		t.Fatalf("trash list: %v %+v", err, infos)
 	}
-	restored2, err := e.TrashRestore(model.RootRef{Kind: model.KindShare, ID: "src"}, infos2[0].Name)
+	if infos[0].OriginRel != "a.txt" {
+		t.Fatalf("origin mismatch: %+v", infos[0])
+	}
+	restored, err := e.TrashRestore(model.RootRef{Kind: model.KindShare, ID: "src"}, infos[0].Name)
 	if err != nil {
-		t.Fatalf("restore 2: %v", err)
+		t.Fatalf("restore: %v", err)
 	}
-	if restored2 != "a (1).txt" {
-		t.Fatalf("conflict restore should auto-rename to a (1).txt, got %q", restored2)
+	if restored != "a (1).txt" {
+		t.Fatalf("conflict restore should auto-rename to a (1).txt, got %q", restored)
 	}
 	got, _ := os.ReadFile(filepath.Join(src, "a.txt"))
 	got2, _ := os.ReadFile(filepath.Join(src, "a (1).txt"))
-	if string(got) != "first" || string(got2) != "second version" {
+	if string(got) != "recreated by another writer" || string(got2) != "hello trash" {
 		t.Fatalf("restore content mixup: a.txt=%q a(1)=%q", got, got2)
 	}
 }
