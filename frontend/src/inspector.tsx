@@ -18,6 +18,7 @@ import {
   IconFolder,
   IconFor,
   IconHash,
+  IconLink,
   IconMove,
   IconPencil,
   IconSSD,
@@ -39,12 +40,14 @@ export function Inspector({
   onRename,
   onDelete,
   onMove,
+  onShare,
 }: {
   target: InspectorTarget | null;
   onClose: () => void;
   onRename: (e: Entry) => void;
   onDelete: (e: Entry) => void;
   onMove: (e: Entry) => void;
+  onShare?: (t: InspectorTarget) => void;
 }) {
   const { toast } = useApp();
   const [detail, setDetail] = useState<EntryDetail | null>(null);
@@ -53,10 +56,9 @@ export function Inspector({
     state: "idle",
   });
   const [preview, setPreview] = useState<{
-    kind: "image" | "text" | "pdf" | null;
+    kind: "image" | "text" | "pdf" | "video" | "audio" | null;
     url?: string;
     text?: string;
-    truncated?: boolean;
   }>({ kind: null });
 
   useEffect(() => {
@@ -75,13 +77,16 @@ export function Inspector({
   useEffect(() => {
     if (!target || err) return;
     const entryName = target.entry.name.toLowerCase();
-    const isImg = /\.(jpe?g|png|gif|webp|bmp|avif|svg)$/i.test(entryName);
+    const isImg = /\.(jpe?g|png|gif|webp|bmp)$/i.test(entryName);
     const isTxt = /\.(txt|md|log|json|xml|csv|srt|nfo|ini|cfg|yaml|yml|toml)$/i.test(entryName);
     const isPdf = entryName.endsWith(".pdf");
-    if (!isImg && !isTxt && !isPdf) return;
+    const isVideo = /\.(mp4|webm|mkv|mov|m4v)$/i.test(entryName);
+    const isAudio = /\.(mp3|flac|m4a|wav|ogg)$/i.test(entryName);
+    if (!isImg && !isTxt && !isPdf && !isVideo && !isAudio) return;
     if (isTxt && target.entry.size > 262144) return;
     if ((isImg || isPdf) && target.entry.size > 33554432) return;
-    const url = api.downloadUrl(target.rootId, target.path ? `${target.path}/${target.entry.name}` : target.entry.name);
+    if ((isVideo || isAudio) && target.entry.size > 2147483648) return;
+    const url = api.streamUrl(target.rootId, target.path ? `${target.path}/${target.entry.name}` : target.entry.name);
     let dead = false;
     (async () => {
       try {
@@ -94,9 +99,11 @@ export function Inspector({
           const blob = await res.blob();
           const pdfBlob = new Blob([blob], { type: "application/pdf" });
           if (!dead) setPreview({ kind: "pdf", url: URL.createObjectURL(pdfBlob) });
+        } else if (isVideo || isAudio) {
+          if (!dead) setPreview({ kind: isVideo ? "video" : "audio", url });
         } else {
           const text = await res.text();
-          if (!dead) setPreview({ kind: "text", text, truncated: text.length >= 262144 });
+          if (!dead) setPreview({ kind: "text", text });
         }
       } catch {
         /* 预览失败静默（不影响元数据展示） */
@@ -182,6 +189,12 @@ export function Inspector({
         )}
         {preview.kind === "pdf" && (
           <embed class="tv-preview" src={preview.url} type="application/pdf" style="width:100%;height:240px;border-radius:8px;margin-top:8px" />
+        )}
+        {preview.kind === "video" && (
+          <video class="tv-preview" src={preview.url} controls style="width:100%;border-radius:8px;margin-top:8px" />
+        )}
+        {preview.kind === "audio" && (
+          <audio src={preview.url} controls style="width:100%;margin-top:8px" />
         )}
         {preview.kind === "text" && (
           <pre class="tv-hashout" style="max-height:200px;overflow:auto;margin-top:8px">{preview.text}</pre>
@@ -304,6 +317,10 @@ export function Inspector({
                   {t("act.download")}
                 </a>
               )}
+              <button class="tv-btn" onClick={() => onShare?.(target)}>
+                <IconLink size={13} />
+                {t("share.title")}
+              </button>
               <button class="tv-btn danger" onClick={() => onDelete(target.entry)}>
                 <IconTrash size={13} />
                 {t("act.delete")}

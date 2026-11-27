@@ -125,6 +125,9 @@ export interface Settings {
   physicalWrite: boolean;
   protectedMode: string;
   trash: boolean;
+  shareEnable: boolean;
+  sharePort: number;
+  shareBind: string;
   expertMode: boolean;
   showHidden: boolean;
   language: string;
@@ -144,6 +147,19 @@ export interface EntryDetail {
   target?: string;
   fullPath: string;
   protected: boolean;
+}
+
+export interface ShareLink {
+  token: string;
+  root: { kind: RootKind; id: string };
+  relPath: string;
+  name: string;
+  createdAt: string;
+  expiresAt?: string;
+  passwordHash?: string;
+  downloads: number;
+  lastDownload?: string;
+  note?: string;
 }
 
 function parseRootId(rootId: string): { kind: RootKind; id: string } {
@@ -335,6 +351,25 @@ export const api = {
     request<{ status: string; restored: string }>("POST", "trash_restore", {
       body: { root: parseRootId(rootId), name },
     }),
+  sharesList: () => request<{ shares: ShareLink[] }>("GET", "shares"),
+  sharesCreate: (opts: { rootId: string; path: string; expiryDays: number; password: string; note?: string }) =>
+    request<ShareLink>("POST", "shares_create", { body: { ...opts } }),
+  sharesRevoke: (token: string) =>
+    request<{ status: string }>("POST", "shares_revoke", { body: { token } }),
+  zipUrl: (rootId: string, path: string) => {
+    const url = new URL(boot.api, window.location.origin);
+    url.searchParams.set("cmd", "zip");
+    url.searchParams.set("rootId", rootId);
+    url.searchParams.set("path", path);
+    return url.toString();
+  },
+  streamUrl: (rootId: string, path: string) => {
+    const url = new URL(boot.api, window.location.origin);
+    url.searchParams.set("cmd", "stream");
+    url.searchParams.set("rootId", rootId);
+    url.searchParams.set("path", path);
+    return url.toString();
+  },
   settings: () => request<Settings>("GET", "settings"),
   // POST from the browser (nginx CSRF layer); the gateway forwards as PUT.
   saveSettings: (patch: Partial<Settings>) => request<{ status: string }>("POST", "settings", { body: patch }),

@@ -11,6 +11,7 @@ import {
   Node,
   Plan,
   RootKind,
+  ShareLink,
 } from "./api";
 import {
   IconCheck,
@@ -18,6 +19,7 @@ import {
   IconError,
   IconFolder,
   IconInfo,
+  IconLink,
   IconMove,
   IconShield,
   IconTrash,
@@ -688,6 +690,155 @@ export function TrashDialog(p: TrashDialogProps) {
 function parseRootId2(rootId: string): { kind: RootKind; id: string } {
   const [kind, id] = rootId.split(":");
   return { kind: kind as RootKind, id };
+}
+
+export interface ShareDialogProps {
+  rootId: string;
+  path: string;
+  onClose: () => void;
+}
+export function ShareDialog(p: ShareDialogProps) {
+  const { toast, toastErr, caps } = useApp();
+  const [links, setLinks] = useState<ShareLink[] | null>(null);
+  const [expiryDays, setExpiryDays] = useState(7);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sharePort, setSharePort] = useState<number | null>(null);
+
+  const load = async () => {
+    try {
+      const r = await api.sharesList();
+      setLinks((r.shares || []).filter(x => x.root.kind + ":" + x.root.id === p.rootId && x.relPath === p.path));
+    } catch { /* ignore */ }
+    try {
+      const st = await api.settings();
+      if (st.shareEnable) setSharePort(st.sharePort);
+    } catch { /* ignore */ }
+  };
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.rootId, p.path]);
+
+  const shareUrl = (token: string) => {
+    const host = window.location.hostname;
+    const proto = window.location.protocol;
+    const port = sharePort ?? 8787;
+    const suffix = port !== 1996 ? ":" + port : "";
+    return `${proto}//${host}${suffix}/s/${token}`;
+  };
+
+  const create = async () => {
+    setBusy(true);
+    try {
+      await api.sharesCreate({ rootId: p.rootId, path: p.path, expiryDays, password });
+      toast(t("share.created"));
+      await load();
+    } catch (e) {
+      toastErr(e);
+    }
+    setBusy(false);
+  };
+  const revoke = async (token: string) => {
+    setBusy(true);
+    try {
+      await api.sharesRevoke(token);
+      await load();
+    } catch (e) {
+      toastErr(e);
+    }
+    setBusy(false);
+  };
+  const copyLink = async (token: string) => {
+    try {
+      await navigator.clipboard.writeText(shareUrl(token));
+      toast(t("msg.copied"));
+    } catch {
+      toast(shareUrl(token), "warn");
+    }
+  };
+
+  const name = p.path.split("/").pop() || "";
+  return (
+    <Chrome
+      title={t("share.title")}
+      icon={<IconLink />}
+      onClose={p.onClose}
+      foot={<><span class="tv-spacer" /><button class="tv-btn" onClick={p.onClose}>✕</button></>}
+    >
+      <div class="tv-alert info">
+        <IconInfo />
+        <span class="txt">
+          {t("share.desc", { name })}
+          {caps && !caps.writeOk && <b> — {t("err.JOB_STORAGE_UNAVAILABLE")}</b>}
+        </span>
+      </div>
+
+      <div class="tv-kv" style="margin-bottom:10px">
+        <span class="k">{t("share.expiry")}</span>
+        <span>
+          <select class="tv-input" style="max-width:180px" value={String(expiryDays)}
+            onChange={(ev: Event) => setExpiryDays(Number((ev.target as HTMLSelectElement).value))}>
+            <option value="1">{t("share.expiry.1d")}</option>
+            <option value="7">{t("share.expiry.7d")}</option>
+            <option value="30">{t("share.expiry.30d")}</option>
+            <option value="0">{t("share.expiry.never")}</option>
+          </select>
+        </span>
+        <span class="k">{t("share.password")}</span>
+        <span><input class="tv-input" style="max-width:220px" type="password" value={password}
+          placeholder={t("share.password.optional")}
+          onInput={(ev: InputEvent) => setPassword((ev.target as HTMLInputElement).value)} /></span>
+      </div>
+      <div style="margin-bottom:14px">
+        <button class="tv-btn primary" disabled={busy} onClick={() => void create()}>
+          <IconLink size={13} />
+          {t("share.create")}
+        </button>
+      </div>
+
+      <h4 style="font-size:12px;color:var(--tv-text-muted);margin:14px 0 8px">
+        {t("share.active")} ({links?.length ?? 0})
+      </h4>
+      {links && links.length > 0 && (
+        <table class="tv-table">
+          <thead><tr>
+            <th>{t("share.token")}</th>
+            <th style="width:110px">{t("share.expiry")}</th>
+            <th style="width:80px">{t("share.downloads")}</th>
+            <th style="width:220px" />
+          </tr></thead>
+          <tbody>
+            {links.map((l) => (
+              <tr key={l.token} class="row">
+                <td style="font-family:var(--tv-mono);font-size:11px">
+                  …{l.token.slice(-12)}{l.passwordHash ? " 🔒" : ""}
+                </td>
+                <td class="tv-num">{l.expiresAt ? formatTime(l.expiresAt) : "∞"}</td>
+                <td class="tv-num">{l.downloads}</td>
+                <td>
+                  <div style="display:flex;gap:6px;justify-content:flex-end">
+                    <button class="tv-btn" onClick={() => void copyLink(l.token)}>
+                      <IconCopy size={13} /> {t("share.copy")}
+                    </button>
+                    <button class="tv-btn danger" disabled={busy} onClick={() => void revoke(l.token)}>
+                      {t("share.revoke")}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {sharePort !== null && (
+        <div class="tv-alert warn" style="margin-top:10px">
+          <IconWarn size={13} />
+          <span class="txt">{t("share.portNote", { port: String(sharePort) })}</span>
+        </div>
+      )}
+    </Chrome>
+  );
 }
 
 export function JobErrorDialog(d: { job: Job; onClose: () => void; onRetry: () => void }) {

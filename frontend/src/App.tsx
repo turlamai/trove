@@ -19,6 +19,7 @@ import {
   PlanDialog,
   RenameDialog,
   ConflictDialog,
+  ShareDialog,
   TrashDialog,
 } from "./dialogs";
 import {
@@ -52,6 +53,7 @@ type Dialog =
   | { type: "ack"; pane: number; req: Record<string, unknown>; targetLabel: string }
   | { type: "mix"; src: string; dst: string }
   | { type: "conflicts"; jobId: string }
+  | { type: "share"; rootId: string; path: string }
   | { type: "jobError"; jobId: string }
   | { type: "settings" };
 
@@ -680,6 +682,7 @@ export function App() {
                   onClose={() => setInspect(null)}
                   onRename={(e) => setDialog({ type: "rename", pane: active, entry: e })}
                   onDelete={(e) => void opDelete(active, [e])}
+                  onShare={(t) => setDialog({ type: "share", rootId: t.rootId, path: t.path })}
                   onMove={(e) => {
                     if (dual) void opTransferToOtherPane(active, "move", [panes[active].path ? `${panes[active].path}/${e.name}` : e.name]);
                     else toast(t("tb.dual"), "warn");
@@ -751,6 +754,13 @@ export function App() {
       )}
       {dialog.type === "mix" && (
         <MixDialog srcLabel={dialog.src} dstLabel={dialog.dst} onClose={() => setDialog({ type: "none" })} />
+      )}
+      {dialog.type === "share" && (
+        <ShareDialog
+          rootId={dialog.rootId}
+          path={dialog.path}
+          onClose={() => setDialog({ type: "none" })}
+        />
       )}
       {dialog.type === "conflicts" && (
         <ConflictsLoader jobId={dialog.jobId} onClose={() => setDialog({ type: "none" })} onResolve={resolveConflicts} />

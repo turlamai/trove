@@ -18,6 +18,9 @@ type Config struct {
 	PhysicalWrite bool   // allow writes into /mnt/diskN and pools (default false)
 	ProtectedMode string // "deny" | "ack" (default deny)
 	Trash         bool   // user-share deletes move to a per-share trash (default true)
+	ShareEnable   bool   // public share-link listener (default false)
+	SharePort     int    // TCP port for the share listener (0 = disabled)
+	ShareBind     string // "" = all interfaces, "lan" = private only
 	ExpertMode    bool   // expose physical roots in the UI (default false)
 	ShowHidden    bool   // show dotfiles (default false)
 	Language      string // ui hint: "zh-CN" | "en" (default "" = browser)
@@ -31,6 +34,9 @@ func Defaults(path string) *Config {
 		PhysicalWrite: false,
 		ProtectedMode: "deny",
 		Trash:         true,
+		ShareEnable:   false,
+		SharePort:     8787,
+		ShareBind:     "lan",
 		ExpertMode:    false,
 		ShowHidden:    false,
 	}
@@ -69,6 +75,14 @@ func Load(path string) *Config {
 			}
 		case "TRASH":
 			c.Trash = v == "true"
+		case "SHARE_ENABLE":
+			c.ShareEnable = v == "true"
+		case "SHARE_PORT":
+			if n, err := strconv.Atoi(v); err == nil {
+				c.SharePort = n
+			}
+		case "SHARE_BIND":
+			c.ShareBind = v
 		case "EXPERT_MODE":
 			c.ExpertMode = v == "true"
 		case "SHOW_HIDDEN":
@@ -97,6 +111,9 @@ func (c *Config) Save() error {
 	w("PHYSICAL_WRITE", boolStr(c.PhysicalWrite))
 	w("PROTECTED_MODE", c.ProtectedMode)
 	w("TRASH", boolStr(c.Trash))
+	w("SHARE_ENABLE", boolStr(c.ShareEnable))
+	w("SHARE_PORT", strconv.Itoa(c.SharePort))
+	w("SHARE_BIND", c.ShareBind)
 	w("EXPERT_MODE", boolStr(c.ExpertMode))
 	w("SHOW_HIDDEN", boolStr(c.ShowHidden))
 	w("LANGUAGE", c.Language)

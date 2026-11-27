@@ -25,6 +25,7 @@ import (
 	"github.com/turlamai/trove/daemon/internal/planner"
 	"github.com/turlamai/trove/daemon/internal/resolver"
 	"github.com/turlamai/trove/daemon/internal/roots"
+	"github.com/turlamai/trove/daemon/internal/shares"
 	"github.com/turlamai/trove/daemon/internal/unraid"
 )
 
@@ -105,6 +106,20 @@ func main() {
 		log.Printf("no data directory configured: read-only mode")
 	}
 
+	var sharesMgr *shares.Manager
+	if dataOK {
+		if st, err := shares.OpenStore(cfg.DataDir + "/trove-shares"); err == nil {
+			sharesMgr = shares.NewManager(res, st, func(f string, a ...any) {
+				log.Printf("[shares] "+f, a...)
+			})
+			sharesMgr.Reconfigure(shares.PublicConfig{
+				Enable: cfg.ShareEnable,
+				Port:   cfg.SharePort,
+				Bind:   cfg.ShareBind,
+			})
+		}
+	}
+
 	plnr := planner.New(res, reg, func() planner.Settings {
 		c := config.Load(*cfgPath)
 		return planner.Settings{
@@ -125,6 +140,7 @@ func main() {
 		Planner:  plnr,
 		Manager:  manager,
 		Executor: exec,
+		Shares:   sharesMgr,
 		Cfg: func() *config.Config {
 			return config.Load(*cfgPath)
 		},
@@ -132,6 +148,23 @@ func main() {
 			return unraid.ReadVarIni(*varIniPath)
 		},
 		Token: token,
+	}
+	dep.OnSettingsChanged = func() {
+		c := config.Load(*cfgPath)
+		if sharesMgr == nil && c.DataDir != "" {
+			if st, err := shares.OpenStore(filepath.Join(c.DataDir, "trove-shares")); err == nil {
+				sharesMgr = shares.NewManager(res, st, func(f string, a ...any) {
+					log.Printf("[shares] "+f, a...)
+				})
+			}
+		}
+		if sharesMgr != nil {
+			sharesMgr.Reconfigure(shares.PublicConfig{
+				Enable: c.ShareEnable,
+				Port:   c.SharePort,
+				Bind:   c.ShareBind,
+			})
+		}
 	}
 	handler := api.New(dep)
 

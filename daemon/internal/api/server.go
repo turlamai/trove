@@ -13,6 +13,7 @@ import (
 	"path"
 	"sort"
 	"crypto/subtle"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ import (
 	"github.com/turlamai/trove/daemon/internal/planner"
 	"github.com/turlamai/trove/daemon/internal/resolver"
 	"github.com/turlamai/trove/daemon/internal/roots"
+	"github.com/turlamai/trove/daemon/internal/shares"
 	"github.com/turlamai/trove/daemon/internal/troveerr"
 	"github.com/turlamai/trove/daemon/internal/unraid"
 )
@@ -41,6 +43,8 @@ type Deps struct {
 	Planner  *planner.Planner
 	Manager  *jobs.Manager      // nil in read-only mode
 	Executor *executor.Executor // nil in read-only mode
+	Shares   *shares.Manager
+	OnSettingsChanged func()
 	Cfg      func() *config.Config
 	Uraid    func() unraid.State
 	Token    string
@@ -72,6 +76,11 @@ func routes(d Deps) http.Handler {
 	mux.HandleFunc("POST /api/v1/jobs/{id}/resolve", d.handleJobResolve)
 	mux.HandleFunc("GET /api/v1/jobs/{id}/events", d.handleJobEvents)
 	mux.HandleFunc("GET /api/v1/debug/log", d.handleDebugLog)
+	mux.HandleFunc("GET /api/v1/zip", d.handleZip)
+	mux.HandleFunc("GET /api/v1/stream", d.handleStream)
+	mux.HandleFunc("GET /api/v1/shares", d.handleSharesList)
+	mux.HandleFunc("POST /api/v1/shares", d.handleSharesCreate)
+	mux.HandleFunc("POST /api/v1/shares/revoke", d.handleSharesRevoke)
 	mux.HandleFunc("GET /api/v1/trash", d.handleTrashList)
 	mux.HandleFunc("POST /api/v1/trash/restore", d.handleTrashRestore)
 	mux.HandleFunc("PUT /api/v1/upload", d.handleUpload)
@@ -681,6 +690,77 @@ func (d Deps) handleJobEvents(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"events": evs})
 }
 
+// handleSharesList returns all active share links (authenticated).
+func (d Deps) handleSharesList(w http.ResponseWriter, r *http.Request) {
+	if d.Shares == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"shares": []any{}})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"shares": d.Shares.List()})
+}
+
+// handleSharesCreate creates a share link.
+func (d Deps) handleSharesCreate(w http.ResponseWriter, r *http.Request) {
+	if d.Shares == nil {
+		writeErr(w, troveerr.New(troveerr.JobStorageUnavailable, readOnlyWhy(d.Cfg())))
+		return
+	}
+	var body struct {
+		Root       model.RootRef `json:"root"`
+		Path       string        `json:"path"`
+		ExpiryDays int           `json:"expiryDays"`
+		Password   string        `json:"password"`
+		Note       string        `json:"note"`
+	}
+	if err := decodeBody(r, &body); err != nil {
+		writeErr(w, err)
+		return
+	}
+	if body.Path == "" {
+		writeErr(w, troveerr.New(troveerr.BadRequest, "path required"))
+		return
+	}
+	if len(body.Password) > 128 {
+		writeErr(w, troveerr.New(troveerr.BadRequest, "password too long"))
+		return
+	}
+	if body.ExpiryDays < 0 || body.ExpiryDays > 365 {
+		writeErr(w, troveerr.New(troveerr.BadRequest, "expiryDays must be 0..365 (0 = never)"))
+		return
+	}
+	var expiresAt *time.Time
+	if body.ExpiryDays > 0 {
+		t := time.Now().UTC().AddDate(0, 0, body.ExpiryDays)
+		expiresAt = &t
+	}
+	sh, err := d.Shares.Create(body.Root, body.Path, path.Base("/"+body.Path), expiresAt, body.Password, body.Note)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, sh)
+}
+
+// handleSharesRevoke removes a share link.
+func (d Deps) handleSharesRevoke(w http.ResponseWriter, r *http.Request) {
+	if d.Shares == nil {
+		writeErr(w, troveerr.New(troveerr.NotFound, "sharing disabled"))
+		return
+	}
+	var body struct {
+		Token string `json:"token"`
+	}
+	if err := decodeBody(r, &body); err != nil {
+		writeErr(w, err)
+		return
+	}
+	if err := d.Shares.Revoke(body.Token); err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
 // handleDebugLog tails the daemon log (development-preview diagnostic:
 // crashes leave their stderr stack traces there; endpoint goes away before
 // any stable release).
@@ -902,6 +982,9 @@ func (d Deps) handleSettingsGet(w http.ResponseWriter, r *http.Request) {
 		"physicalWrite": cfg.PhysicalWrite,
 		"protectedMode": cfg.ProtectedMode,
 		"trash":         cfg.Trash,
+		"shareEnable":   cfg.ShareEnable,
+		"sharePort":     cfg.SharePort,
+		"shareBind":     cfg.ShareBind,
 		"expertMode":    cfg.ExpertMode,
 		"showHidden":    cfg.ShowHidden,
 		"language":      cfg.Language,
@@ -915,6 +998,9 @@ func (d Deps) handleSettingsPut(w http.ResponseWriter, r *http.Request) {
 		PhysicalWrite *bool   `json:"physicalWrite,omitempty"`
 		ProtectedMode *string `json:"protectedMode,omitempty"`
 		Trash         *bool   `json:"trash,omitempty"`
+		ShareEnable   *bool   `json:"shareEnable,omitempty"`
+		SharePort     *int    `json:"sharePort,omitempty"`
+		ShareBind     *string `json:"shareBind,omitempty"`
 		ExpertMode    *bool   `json:"expertMode,omitempty"`
 		ShowHidden    *bool   `json:"showHidden,omitempty"`
 		Language      *string `json:"language,omitempty"`
@@ -948,6 +1034,21 @@ func (d Deps) handleSettingsPut(w http.ResponseWriter, r *http.Request) {
 	if body.Trash != nil {
 		cfg.Trash = *body.Trash
 	}
+	if body.ShareEnable != nil {
+		cfg.ShareEnable = *body.ShareEnable
+	}
+	if body.SharePort != nil {
+		cfg.SharePort = *body.SharePort
+		if cfg.SharePort < 0 || cfg.SharePort > 65535 {
+			cfg.SharePort = 8787
+		}
+	}
+	if body.ShareBind != nil {
+		v := *body.ShareBind
+		if v == "" || v == "lan" || net.ParseIP(v) != nil {
+			cfg.ShareBind = v
+		}
+	}
 	if body.ProtectedMode != nil {
 		if *body.ProtectedMode == "ack" {
 			cfg.ProtectedMode = "ack"
@@ -967,6 +1068,9 @@ func (d Deps) handleSettingsPut(w http.ResponseWriter, r *http.Request) {
 	if err := cfg.Save(); err != nil {
 		writeErr(w, troveerr.Wrap(troveerr.IOFailure, err, "save settings"))
 		return
+	}
+	if d.OnSettingsChanged != nil {
+		d.OnSettingsChanged()
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
