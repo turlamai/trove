@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "a92519e5e020d04b9a683edf0bf6d51d139e3fe708041fef3c1775bedd7bcf41">
+<!ENTITY packageSHA  "d89f4e61603a1c6a732cdc3574980f82c31f8acd59c1bfbc6b493f92245523a4">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,13 +25,6 @@
 
 <CHANGES>
 ### 2026.12.33
-- Use ordinal menu registration (Settings:50 / Tools:50) — the form
-  third-party plugins like IPMI and Plex Streams use to appear as
-  clickable cards on the section listing pages instead of being
-  rendered inline. Untyped or unordered entries expand inline; ordinal
-  entries are listed.
-
-### 2026.12.32
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
