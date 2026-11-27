@@ -29,7 +29,7 @@
   --tv-bg-inverted: #171717;
 
   /* text */
-  --tv-text: #262626;
+  --tv-text: #1d1b1b;
   --tv-text-strong: #171717;
   --tv-text-muted: #737373;
   --tv-text-dimmed: #a3a3a3;
@@ -61,8 +61,7 @@
   --tv-radius-sm: 6px;
   --tv-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.06);
   --tv-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.18);
-  --tv-font: clear-sans, "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui,
-    sans-serif;
+  --tv-font: clear-sans, sans-serif;
   --tv-mono: bitstream, ui-monospace, SFMono-Regular, Menlo, monospace;
 
   position: relative;
@@ -282,6 +281,10 @@
   background: var(--tv-bg);
   color: var(--tv-text);
   font: inherit;
+  /* match the webgui's buttons: 14px, tight line, wide tracking */
+  font-size: 14px;
+  line-height: 14px;
+  letter-spacing: 1.8px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -358,7 +361,9 @@
 .tv-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  /* native tables read 11px with 1px tracking in the Unraid webgui */
+  font-size: 11px;
+  letter-spacing: 1px;
 }
 .tv-table thead th {
   position: sticky;
@@ -367,8 +372,8 @@
   background: var(--tv-bg-muted);
   border-bottom: 1px solid var(--tv-border);
   text-align: left;
-  font-weight: 600;
-  color: var(--tv-text-muted);
+  font-weight: 400;
+  color: var(--tv-text);
   padding: 6px 10px;
   white-space: nowrap;
   user-select: none;
@@ -812,6 +817,7 @@
   background: var(--tv-bg);
   color: var(--tv-text);
   font: inherit;
+  line-height: 20px;
   padding: 7px 10px;
   outline: none;
 }
@@ -1249,6 +1255,9 @@
   color: var(--tv-text-dimmed);
   cursor: pointer;
   padding: 0;
+  font-size: 12px;
+  line-height: normal;
+  letter-spacing: 0;
 }
 .tv-segbtn:hover {
   color: var(--tv-text);
