@@ -443,11 +443,21 @@ if ($method === 'POST') {
     }
 }
 
-// download streams bytes, not JSON — special-case the passthrough.
-if ($cmd === 'download') {
+// download/zip relay real bytes, not JSON — set honest headers here: the
+// generic forward cannot pass the daemon's Content-Type/Disposition back,
+// so the browser would name the file gateway.php and mis-typed archives.
+if ($cmd === 'download' || $cmd === 'zip') {
     header_remove('Content-Type');
-    header('Content-Type: application/octet-stream');
+    header('Content-Type: ' . ($cmd === 'zip' ? 'application/zip' : 'application/octet-stream'));
     header('X-Content-Type-Options: nosniff');
+    $p = isset($_GET['path']) && is_string($_GET['path']) ? $_GET['path'] : '';
+    $segs = explode('/', trim(str_replace('\\', '/', $p), '/'));
+    $base = end($segs);
+    if (!is_string($base) || $base === '' || $base === '.' || $base === '..') {
+        $base = 'download';
+    }
+    $name = $cmd === 'zip' ? $base . '.zip' : $base;
+    header("Content-Disposition: attachment; filename*=UTF-8''" . rawurlencode($name));
 }
 
 // stream must be a byte relay, not a buffered forward: the generic path

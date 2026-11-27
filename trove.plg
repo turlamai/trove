@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.23">
+<!ENTITY version     "2026.12.24">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,13 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.24
+- Fix: ZIP and single-file downloads lost the daemon's headers in the
+  generic forward — archives arrived typed application/json with no
+  filename, so the browser saved them as gateway.json. The gateway now
+  sets the honest Content-Type and an RFC 5987 Content-Disposition
+  (UTF-8 names preserved) for both commands.
+
 ### 2026.12.23
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
