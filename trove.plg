@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "a5c483c1e4c61f169db30def03ae374b931fa0421b109ce6576e710d48db240a">
+<!ENTITY packageSHA  "dcd7a50c0c163748a5ae282257459adeb54ce910e2dec3cfe695d06a669a661f">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,11 +25,6 @@
 
 <CHANGES>
 ### 2026.12.23
-- Fix: the stream relay answered 200 instead of 206 — its status-line
-  regex expected the code at end of line, but "HTTP/1.1 206 Partial
-  Content" carries a reason phrase. Match the code after the version.
-
-### 2026.12.22
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
