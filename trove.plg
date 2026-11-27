@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.36">
+<!ENTITY version     "2026.12.37">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,11 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.37
+- Add the FontAwesome Tag attribute to the Tools entry card — the
+  responsive card grid renders icons from Tag (a class name); a page
+  without it was dropped from the listing entirely.
+
 ### 2026.12.36
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
