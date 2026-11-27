@@ -1,7 +1,6 @@
-Menu="Settings:50"
-Title="Trove"
+Menu="Utilities"
+Title="Trove Settings"
 Icon="trove.png"
-Type="menu"
 ---
 <?php
 // Trove settings (native Dynamix form). Writes the same cfg file the daemon

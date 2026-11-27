@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.33">
+<!ENTITY version     "2026.12.34">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -15,7 +15,7 @@
 <PLUGIN name="&name;"
         author="&author;"
         version="&version;"
-        launch="Tools/trove"
+        launch="Utilities/trove"
         pluginURL="&pluginURL;"
         icon="folder-open"
         min="7.0.0"
@@ -24,6 +24,16 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.34
+- Register under the standard "User Utilities" container — the exact
+  pattern ZFS Master uses. Section listing pages (Settings/Tools) only
+  render their menu-type container cards; content pages registered
+  directly against the section (any type, with or without an ordinal)
+  get expanded inline into the listing. Container members render as
+  titled cards: Settings → User Utilities now lists Trove (file
+  manager) and Trove Settings — nothing expands until clicked, and the
+  file manager itself remains a full-page app at /Utilities/trove.
+
 ### 2026.12.33
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
