@@ -8,6 +8,8 @@
 package resolver
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"io"
 	"os"
@@ -476,4 +478,70 @@ func ReadFD(fd int, b []byte) (int, error) {
 		}
 		return n, err
 	}
+}
+
+// ReadAllFD drains a raw fd to EOF.
+func ReadAllFD(fd int) ([]byte, error) {
+	var out []byte
+	buf := make([]byte, 64*1024)
+	for {
+		n, err := ReadFD(fd, buf)
+		if n > 0 {
+			out = append(out, buf[:n]...)
+		}
+		if err != nil {
+			if err == io.EOF {
+				return out, nil
+			}
+			return out, err
+		}
+		if n == 0 {
+			return out, nil
+		}
+	}
+}
+
+// UniqueName finds "name (1)", "name (2)", … not present in dir.
+func UniqueName(dirfd int, name string) string {
+	ext := ""
+	base := name
+	if i := lastDotIdx(name); i > 0 {
+		base, ext = name[:i], name[i:]
+	}
+	for n := 1; n < 1000; n++ {
+		cand := base + " (" + utoa(n) + ")" + ext
+		if _, err := FstatAt(dirfd, cand); err != nil {
+			return cand
+		}
+	}
+	return base + " (" + shortHex() + ")" + ext
+}
+
+func lastDotIdx(s string) int {
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == '.' {
+			return i
+		}
+	}
+	return -1
+}
+
+func utoa(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	var b [8]byte
+	i := len(b)
+	for n > 0 {
+		i--
+		b[i] = byte('0' + n%10)
+		n /= 10
+	}
+	return string(b[i:])
+}
+
+func shortHex() string {
+	var b [4]byte
+	_, _ = rand.Read(b[:])
+	return hex.EncodeToString(b[:])
 }

@@ -110,6 +110,7 @@ func main() {
 		return planner.Settings{
 			PhysicalWrite: c.PhysicalWrite,
 			ProtectedMode: c.ProtectedMode,
+			Trash:         c.Trash,
 			DataDirOK:     dataOK,
 			Concurrency:   c.Concurrency,
 		}

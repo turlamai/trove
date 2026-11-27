@@ -11,6 +11,7 @@ import {
   IconMove,
   IconRefresh,
   IconTrash,
+  IconUpload,
   IconWarn,
 } from "./icons";
 import { errText, t } from "./i18n";
@@ -94,7 +95,7 @@ export function TaskBar({
   onOpenCenter: () => void;
   onConflict: (j: Job) => void;
 }) {
-  const { jobs, refreshJobs, toast } = useApp();
+  const { jobs, uploads, refreshJobs, toast } = useApp();
   const [open, setOpen] = useState(true);
   const active = jobs.filter(
     (j) => j.state === "running" || j.state === "queued" || j.state === "verifying" || j.state === "cancel_requested",
@@ -157,11 +158,27 @@ export function TaskBar({
             )}
           </div>
         ))}
+      {open &&
+        uploads.map((u: UploadTask) => (
+          <div class="tv-taskrow" key={"u" + u.id}>
+            <span class="tv-ic">
+              <IconUpload size={15} />
+            </span>
+            <span class="lbl">↑ {u.name}</span>
+            <div class="tv-progmini tv-prog" style="flex:none;width:180px">
+              <i style={`width:${u.total > 0 ? Math.round((u.loaded / u.total) * 100) : 0}%`} />
+            </div>
+            <span class="tv-num">
+              {u.total > 0 ? Math.round((u.loaded / u.total) * 100) : 0}%
+            </span>
+          </div>
+        ))}
     </div>
   );
 }
 
 import { api } from "./api";
+import { UploadTask } from "./store";
 
 // seconds → m:ss
 function fmtEta(sec: number): string {

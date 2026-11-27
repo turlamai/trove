@@ -17,6 +17,7 @@ type Config struct {
 	Concurrency   int    // parallel write jobs, 1..4 (default 1)
 	PhysicalWrite bool   // allow writes into /mnt/diskN and pools (default false)
 	ProtectedMode string // "deny" | "ack" (default deny)
+	Trash         bool   // user-share deletes move to a per-share trash (default true)
 	ExpertMode    bool   // expose physical roots in the UI (default false)
 	ShowHidden    bool   // show dotfiles (default false)
 	Language      string // ui hint: "zh-CN" | "en" (default "" = browser)
@@ -29,6 +30,7 @@ func Defaults(path string) *Config {
 		Concurrency:   1,
 		PhysicalWrite: false,
 		ProtectedMode: "deny",
+		Trash:         true,
 		ExpertMode:    false,
 		ShowHidden:    false,
 	}
@@ -65,6 +67,8 @@ func Load(path string) *Config {
 			} else {
 				c.ProtectedMode = "deny"
 			}
+		case "TRASH":
+			c.Trash = v == "true"
 		case "EXPERT_MODE":
 			c.ExpertMode = v == "true"
 		case "SHOW_HIDDEN":
@@ -92,6 +96,7 @@ func (c *Config) Save() error {
 	w("CONCURRENCY", strconv.Itoa(c.Concurrency))
 	w("PHYSICAL_WRITE", boolStr(c.PhysicalWrite))
 	w("PROTECTED_MODE", c.ProtectedMode)
+	w("TRASH", boolStr(c.Trash))
 	w("EXPERT_MODE", boolStr(c.ExpertMode))
 	w("SHOW_HIDDEN", boolStr(c.ShowHidden))
 	w("LANGUAGE", c.Language)

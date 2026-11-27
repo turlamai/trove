@@ -10,7 +10,7 @@ import {
   formatTime,
   TroveError,
 } from "./api";
-import { iconClassForName, IconFor, IconRefresh, IconSearch } from "./icons";
+import { iconClassForName, IconFor, IconRefresh, IconSearch, IconUpload } from "./icons";
 import { errText, t } from "./i18n";
 import { useApp } from "./store";
 
@@ -66,11 +66,12 @@ interface PaneProps {
   dropActive: boolean;
   onDrop: () => void;
   dragIn: boolean;
+  onUploadFiles: (files: File[]) => void;
 }
 
 export function FilePane(props: PaneProps) {
   const { state: s, onChange } = props;
-  const { prefs } = useApp();
+  const { prefs, queueUploads } = useApp();
   const [dragOver, setDragOver] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 60 });
@@ -208,15 +209,22 @@ export function FilePane(props: PaneProps) {
       class={"tv-pane" + (props.focused ? " focused" : "") + (dragOver ? " tv-drop-target" : "")}
       onMouseDown={props.onFocus}
       onDragOver={(ev: DragEvent) => {
-        if (props.dragIn) {
+        const dtypes = ev.dataTransfer ? Array.from(ev.dataTransfer.types) : [];
+        if (props.dragIn || dtypes.includes("Files")) {
           ev.preventDefault();
-          if (ev.dataTransfer) ev.dataTransfer.dropEffect = "copy";
+          if (ev.dataTransfer) ev.dataTransfer.dropEffect = dtypes.includes("Files") ? "copy" : "move";
           setDragOver(true);
         }
       }}
       onDragLeave={() => setDragOver(false)}
       onDrop={(ev: DragEvent) => {
         setDragOver(false);
+        const dt = ev.dataTransfer;
+        if (dt && Array.from(dt.types).includes("Files") && dt.files.length > 0 && s.root) {
+          ev.preventDefault();
+          props.onUploadFiles(Array.from(dt.files));
+          return;
+        }
         if (props.dragIn) {
           ev.preventDefault();
           props.onDrop();
@@ -250,6 +258,23 @@ export function FilePane(props: PaneProps) {
             }
           />
         </div>
+        <button
+          class="tv-btn ghost"
+          title={t("tb.upload")}
+          onClick={() => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.multiple = true;
+            input.onchange = () => {
+              if (input.files && input.files.length && s.root) {
+                queueUploads(`${s.root.kind}:${s.root.id}`, s.path, Array.from(input.files));
+              }
+            };
+            input.click();
+          }}
+        >
+          <IconUpload size={14} />
+        </button>
         <button class="tv-btn ghost" title={t("tb.refresh") + " (F5)"} onClick={() => onChange({})}>
           <IconRefresh size={14} />
         </button>

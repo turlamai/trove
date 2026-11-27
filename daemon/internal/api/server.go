@@ -72,6 +72,9 @@ func routes(d Deps) http.Handler {
 	mux.HandleFunc("POST /api/v1/jobs/{id}/resolve", d.handleJobResolve)
 	mux.HandleFunc("GET /api/v1/jobs/{id}/events", d.handleJobEvents)
 	mux.HandleFunc("GET /api/v1/debug/log", d.handleDebugLog)
+	mux.HandleFunc("GET /api/v1/trash", d.handleTrashList)
+	mux.HandleFunc("POST /api/v1/trash/restore", d.handleTrashRestore)
+	mux.HandleFunc("PUT /api/v1/upload", d.handleUpload)
 	mux.HandleFunc("GET /api/v1/settings", d.handleSettingsGet)
 	mux.HandleFunc("PUT /api/v1/settings", d.handleSettingsPut)
 	return mux
@@ -698,6 +701,199 @@ func (d Deps) handleDebugLog(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleTrashList reads a share's trash entries.
+func (d Deps) handleTrashList(w http.ResponseWriter, r *http.Request) {
+	if d.Executor == nil {
+		writeErr(w, troveerr.New(troveerr.JobStorageUnavailable, readOnlyWhy(d.Cfg())))
+		return
+	}
+	ref, err := parseRootQ(r)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	_, infos, err := d.Executor.TrashList(ref)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"root": ref, "entries": infos})
+}
+
+// handleTrashRestore moves one entry back to its origin.
+func (d Deps) handleTrashRestore(w http.ResponseWriter, r *http.Request) {
+	if d.Executor == nil {
+		writeErr(w, troveerr.New(troveerr.JobStorageUnavailable, readOnlyWhy(d.Cfg())))
+		return
+	}
+	var body struct {
+		Root model.RootRef `json:"root"`
+		Name string        `json:"name"`
+	}
+	if err := decodeBody(r, &body); err != nil {
+		writeErr(w, err)
+		return
+	}
+	restored, err := d.Executor.TrashRestore(body.Root, body.Name)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "restored": restored})
+}
+
+// handleUpload streams a request body into the target directory through a
+// staging file (fsync → verify size → atomic commit per conflict policy).
+// Method is PUT; the body is the raw file content (no multipart parsing on
+// the daemon side).
+func (d Deps) handleUpload(w http.ResponseWriter, r *http.Request) {
+	if d.Executor == nil {
+		writeErr(w, troveerr.New(troveerr.JobStorageUnavailable, readOnlyWhy(d.Cfg())))
+		return
+	}
+	ref, err := parseRootQ(r)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	dir := r.URL.Query().Get("dir")
+	name := r.URL.Query().Get("name")
+	policy := r.URL.Query().Get("policy")
+	if policy == "" {
+		policy = "rename"
+	}
+	switch policy {
+	case "skip", "rename", "overwrite":
+	default:
+		writeErr(w, troveerr.New(troveerr.BadRequest, "unknown conflict policy"))
+		return
+	}
+	if _, err := resolver.NormalizeName(name); err != nil {
+		writeErr(w, err)
+		return
+	}
+	dstRoot, err := d.Resolver.RootOf(ref)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	if err := d.Resolver.Registry().Verify(dstRoot); err != nil {
+		writeErr(w, err)
+		return
+	}
+	dstRes, err := d.Resolver.Resolve(ref, dir, true)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	defer dstRes.Close()
+	if !dstRes.Exists || !dstRes.IsDir() {
+		writeErr(w, troveerr.New(troveerr.NotWritable, "target directory is missing"))
+		return
+	}
+	dstDirFd, err := resolver.OpenResolvedDir(dstRes)
+	if err != nil {
+		writeErr(w, troveerr.Wrap(troveerr.IOFailure, err, "open target dir"))
+		return
+	}
+	defer resolver.CloseFD(dstDirFd)
+
+	// conflict pre-check (the commit re-checks the race window)
+	pol := model.ConflictPolicy(policy)
+	target := name
+	if _, err := resolver.FstatAt(dstDirFd, name); err == nil {
+		switch pol {
+		case model.PolicySkip:
+			writeJSON(w, http.StatusConflict, map[string]any{
+				"error": map[string]any{"code": "CONFLICT_REQUIRES_DECISION",
+					"message": "target exists: " + name, "recoverable": true}})
+			return
+		case model.PolicyRename:
+			target = resolver.UniqueName(dstDirFd, name)
+		}
+	}
+
+	stagingName := ".trove-stage-" + name + "." + strconv.FormatInt(time.Now().UnixNano()%1e9, 36)
+	sfd, err := resolver.CreateFileExclusive(dstDirFd, stagingName, 0644)
+	if err != nil {
+		writeErr(w, troveerr.Wrap(troveerr.IOFailure, err, "create staging"))
+		return
+	}
+	committed := false
+	defer func() {
+		if sfd >= 0 {
+			resolver.CloseFD(sfd)
+		}
+		if !committed {
+			// remove partial staging
+			if rm, err := resolver.OpenDirNoFollow(dstRes.ParentFd, dstRes.Name); err == nil {
+				_ = resolver.UnlinkAt(rm, stagingName)
+				resolver.CloseFD(rm)
+			}
+		}
+	}()
+
+	// stream the body
+	var written int64
+	buf := make([]byte, 1<<20)
+	clen := r.Header.Get("Content-Length")
+	cl, _ := strconv.ParseInt(clen, 10, 64)
+	for {
+		nr, er := r.Body.Read(buf)
+		if nr > 0 {
+			if err := resolver.WriteAllFD(sfd, buf[:nr]); err != nil {
+				writeErr(w, troveerr.Wrap(troveerr.IOFailure, er, "write staging"))
+				return
+			}
+			written += int64(nr)
+		}
+		if er != nil {
+			break
+		}
+	}
+	if clen != "" && written != cl {
+		writeErr(w, troveerr.New(troveerr.IOFailure,
+			"upload truncated: got "+strconv.FormatInt(written, 10)+" want "+clen))
+		return
+	}
+	if written == 0 {
+		writeErr(w, troveerr.New(troveerr.BadRequest, "empty upload body"))
+		return
+	}
+	if err := resolver.FsyncFD(sfd); err != nil {
+		writeErr(w, troveerr.Wrap(troveerr.IOFailure, err, "fsync staging"))
+		return
+	}
+	resolver.CloseFD(sfd)
+
+	// commit — NOREPLACE re-checks the race window; overwrite replaces.
+	err = resolver.RenameAt(dstDirFd, stagingName, dstDirFd, target, resolver.RenameNoReplace)
+	if os.IsExist(err) {
+		if pol == model.PolicyOverwrite {
+			err = resolver.RenameAt(dstDirFd, stagingName, dstDirFd, target, 0)
+		} else if pol == model.PolicyRename {
+			alt := resolver.UniqueName(dstDirFd, name)
+			err = resolver.RenameAt(dstDirFd, stagingName, dstDirFd, alt, resolver.RenameNoReplace)
+			if err == nil {
+				target = alt
+			}
+		}
+	}
+	if err != nil {
+		writeErr(w, troveerr.Wrap(troveerr.IOFailure, err, "commit upload"))
+		return
+	}
+	committed = true
+	vst, err := resolver.FstatAt(dstDirFd, target)
+	if err != nil {
+		vst = &resolver.StatInfo{Size: written}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status": "ok", "name": target, "size": vst.Size,
+		"policy": pol,
+	})
+}
+
 func (d Deps) handleSettingsGet(w http.ResponseWriter, r *http.Request) {
 	cfg := d.Cfg()
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -705,6 +901,7 @@ func (d Deps) handleSettingsGet(w http.ResponseWriter, r *http.Request) {
 		"concurrency":   cfg.Concurrency,
 		"physicalWrite": cfg.PhysicalWrite,
 		"protectedMode": cfg.ProtectedMode,
+		"trash":         cfg.Trash,
 		"expertMode":    cfg.ExpertMode,
 		"showHidden":    cfg.ShowHidden,
 		"language":      cfg.Language,
@@ -717,6 +914,7 @@ func (d Deps) handleSettingsPut(w http.ResponseWriter, r *http.Request) {
 		Concurrency   *int    `json:"concurrency,omitempty"`
 		PhysicalWrite *bool   `json:"physicalWrite,omitempty"`
 		ProtectedMode *string `json:"protectedMode,omitempty"`
+		Trash         *bool   `json:"trash,omitempty"`
 		ExpertMode    *bool   `json:"expertMode,omitempty"`
 		ShowHidden    *bool   `json:"showHidden,omitempty"`
 		Language      *string `json:"language,omitempty"`
@@ -746,6 +944,9 @@ func (d Deps) handleSettingsPut(w http.ResponseWriter, r *http.Request) {
 	}
 	if body.PhysicalWrite != nil {
 		cfg.PhysicalWrite = *body.PhysicalWrite
+	}
+	if body.Trash != nil {
+		cfg.Trash = *body.Trash
 	}
 	if body.ProtectedMode != nil {
 		if *body.ProtectedMode == "ack" {

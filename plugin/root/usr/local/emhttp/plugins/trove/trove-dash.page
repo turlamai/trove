@@ -1,0 +1,96 @@
+Menu="Dashboard"
+Title="Trove"
+Icon="trove.png"
+Type="php"
+---
+<?php
+// Trove dashboard tile: job status at a glance + entrances.
+// Reads the journal snapshot directly (no daemon round-trip on page render).
+$plugin = 'trove';
+$cfg = @parse_ini_file('/boot/config/plugins/trove/trove.cfg');
+if (!is_array($cfg)) {
+    $cfg = [];
+}
+$dataDir = isset($cfg['DATA_DIR']) ? (string)$cfg['DATA_DIR'] : '';
+$version = 'dev';
+$plg = @file_get_contents("/var/log/plugins/{$plugin}.plg");
+if ($plg && preg_match('/<!ENTITY version\s+"([^"]+)"/', $plg, $m)) {
+    $version = $m[1];
+}
+
+$running = 0; $completed = 0; $failed = 0; $attention = 0; $current = '';
+if ($dataDir !== '' && is_file($dataDir . '/trove-jobs/state.json')) {
+    $raw = @file_get_contents($dataDir . '/trove-jobs/state.json');
+    $snap = $raw ? json_decode($raw, true) : null;
+    if (is_array($snap) && isset($snap['jobs']) && is_array($snap['jobs'])) {
+        foreach ($snap['jobs'] as $j) {
+            switch ($j['state'] ?? '') {
+                case 'running': case 'queued': case 'verifying':
+                    $running++;
+                    if ($current === '' && !empty($j['currentFile'])) {
+                        $current = $j['currentFile'];
+                    } elseif ($current === '' && !empty($j['plan']['source']['path'])) {
+                        $current = $j['plan']['source']['path'];
+                    }
+                    break;
+                case 'completed': $completed++; break;
+                case 'failed': case 'failed_retryable': $failed++; break;
+                case 'needs_attention': $attention++; break;
+            }
+        }
+    }
+}
+$dataOk = $dataDir !== '' && is_dir($dataDir);
+$statusClass = $attention > 0 ? 'red-text' : ($failed > 0 ? 'red-text' : 'green-text');
+$statusText = !$dataOk ? 'Read-only (no data dir)' : ($running > 0 ? "Running ({$running})" : 'Idle');
+?>
+<tbody title="trove">
+  <tr>
+    <td>
+      <span class="tile-header">
+        <span class="tile-header-left">
+          <div class="section">
+            <h3 class="tile-header-main">Trove</h3>
+            <span class="<?=$statusClass?>"><?=$statusText?></span>
+          </div>
+        </span>
+        <span class="tile-header-right">
+          <span class="tile-header-right-controls">
+            <a href="/Settings/trove-settings"><i class="fa fa-cog control"></i></a>
+          </span>
+        </span>
+      </span>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <div style="padding: 10px;">
+        <table class="tablesorter">
+          <tr>
+            <td>Jobs:</td>
+            <td>
+              Running <strong><?=$running?></strong> ·
+              Completed <strong><?=$completed?></strong> ·
+              Failed <strong style="<?=$failed > 0 ? 'color:#e22828' : ''?>"><?=$failed?></strong>
+              <? if ($attention > 0): ?> · Needs attention <strong style="color:#e22828"><?=$attention?></strong><? endif; ?>
+            </td>
+          </tr>
+          <? if ($current !== ''): ?>
+          <tr>
+            <td>Current:</td>
+            <td><span style="word-break:break-all"><?= htmlspecialchars($current) ?></span></td>
+          </tr>
+          <? endif; ?>
+          <tr>
+            <td>Mode:</td>
+            <td><?=$dataOk ? 'Read/Write' : 'Read-only'?> · v<?= htmlspecialchars($version) ?></td>
+          </tr>
+        </table>
+        <div style="margin-top:8px">
+          <a class="button" href="/Shares/Trove" style="margin-right:8px">Open file manager</a>
+          <? if (!$dataOk): ?><span style="color:#999">configure a data dir to enable writes</span><? endif; ?>
+        </div>
+      </div>
+    </td>
+  </tr>
+</tbody>

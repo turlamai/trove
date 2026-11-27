@@ -132,6 +132,18 @@ export function SettingsView() {
               <div class="hint">/mnt/diskN · /mnt/&lt;pool&gt;</div>
             </label>
           </div>
+          <div class="tv-switchline">
+            <input
+              type="checkbox"
+              class="tv-checkbox"
+              checked={srv.trash}
+              onChange={(ev: Event) => patch({ trash: (ev.target as HTMLInputElement).checked })}
+            />
+            <label>
+              {t("set.trash")}
+              <div class="hint">.trove-trash/</div>
+            </label>
+          </div>
           <div class="tv-field">
             <label>{t("set.protectedMode")}</label>
             <select

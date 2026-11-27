@@ -57,3 +57,9 @@ func (r *Resolver) StatFS(*roots.Root) (int64, int64, error) {
 func SeekFD(int, int64) (int64, error) { return 0, unsupported("SeekFD") }
 func WriteAllFD(int, []byte) error { return unsupported("WriteAllFD") }
 func ReadFD(int, []byte) (int, error) { return 0, unsupported("ReadFD") }
+
+func ReadAllFD(int) ([]byte, error) { return nil, unsupported("ReadAllFD") }
+func UniqueName(int, string) string { return "" }
+func LastDotIdx(string) int { return -1 }
+func Uitoa(int) string { return "" }
+func ShortHex() string { return "" }

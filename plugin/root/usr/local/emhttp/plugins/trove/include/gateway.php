@@ -127,6 +127,9 @@ function trove_routes(): array {
         'job_resolve'  => ['POST', 'POST', '/api/v1/jobs/{id}/resolve', 15],
         'job_events'   => ['GET', 'GET', '/api/v1/jobs/{id}/events', 15],
         'csrf'         => ['GET', 'GET', '/gateway/csrf', 5],
+        'upload'       => ['PUT', 'PUT', '/api/v1/upload', 1800],
+        'trash_list'   => ['GET', 'GET', '/api/v1/trash', 15],
+        'trash_restore'=> ['POST', 'POST', '/api/v1/trash/restore', 15],
         'debug_log'    => ['GET', 'GET', '/api/v1/debug/log', 15],
         'settings'     => ['GET', 'GET', '/api/v1/settings', 10],
         'settings_put' => ['POST', 'PUT', '/api/v1/settings', 15],
@@ -191,6 +194,72 @@ function trove_forward(string $method, string $daemonPath, string $query, string
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $cmd = $_GET['cmd'] ?? '';
+
+// Upload: raw-file PUT. nginx requires the csrf_token form field on POSTs,
+// which a raw-byte body cannot carry — so uploads use PUT with the token in
+// the X-Trove-Csrf header (nginx passes header-token PUTs through; the
+// gateway verifies it against var.ini itself). Streams php://input →
+// daemon socket with flat memory.
+if ($cmd === 'upload') {
+    if ($method !== 'PUT') {
+        trove_fail(405, 'BAD_REQUEST', 'upload requires PUT');
+    }
+    if (!trove_same_origin()) {
+        trove_fail(403, 'ORIGIN_REJECTED', 'cross-origin request rejected');
+    }
+    $csrf = trove_csrf_token();
+    $hdr = $_SERVER['HTTP_X_TROVE_CSRF'] ?? '';
+    if ($csrf === '' || $hdr === '' || !hash_equals($csrf, $hdr)) {
+        trove_fail(403, 'CSRF_INVALID', 'invalid security token', true);
+    }
+    $rootId = $_GET['rootId'] ?? '';
+    $dir = $_GET['dir'] ?? '';
+    $name = $_GET['name'] ?? '';
+    $policy = $_GET['policy'] ?? 'rename';
+    foreach (['rootId' => $rootId, 'name' => $name] as $k => $v) {
+        if (!is_string($v) || $v === '' || strlen($v) > 300) {
+            trove_fail(400, 'BAD_REQUEST', "invalid $k");
+        }
+    }
+    if (!is_string($dir) || strlen($dir) > 3800) {
+        trove_fail(400, 'BAD_REQUEST', 'invalid dir');
+    }
+    if (!in_array($policy, ['skip', 'rename', 'overwrite'], true)) {
+        trove_fail(400, 'BAD_REQUEST', 'unknown conflict policy');
+    }
+    $token = trim((string)@file_get_contents(TROVE_TOKEN_FILE));
+    if ($token === '') {
+        trove_fail(503, 'GATEWAY', 'daemon token unavailable');
+    }
+    $qs = http_build_query(['rootId' => $rootId, 'dir' => $dir, 'name' => $name, 'policy' => $policy]);
+    $url = 'http://troved/api/v1/upload?' . $qs;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_UNIX_SOCKET_PATH => TROVE_SOCKET,
+        CURLOPT_CUSTOMREQUEST => 'PUT',
+        CURLOPT_HTTPHEADER => [
+            'X-Trove-Token: ' . $token,
+            'Content-Type: application/octet-stream',
+            'Connection: close',
+        ],
+        CURLOPT_UPLOAD => true,
+        CURLOPT_INFILE => fopen('php://input', 'rb'),
+        CURLOPT_INFILESIZE => (int)($_SERVER['CONTENT_LENGTH'] ?? 0),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 0,
+    ]);
+    $resp = curl_exec($ch);
+    $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $errno = curl_errno($ch);
+    curl_close($ch);
+    if ($resp === false || $errno !== 0 || $status === 0) {
+        trove_fail(503, 'GATEWAY', 'daemon unreachable during upload', true);
+    }
+    http_response_code($status >= 200 ? $status : 500);
+    echo $resp;
+    exit;
+}
 
 // Token refresh: var.ini rotates on emhttp events; a long-lived SPA page
 // re-reads the current token here (Unraid's documented gettoken pattern).

@@ -124,6 +124,7 @@ export interface Settings {
   concurrency: number;
   physicalWrite: boolean;
   protectedMode: string;
+  trash: boolean;
   expertMode: boolean;
   showHidden: boolean;
   language: string;
@@ -143,6 +144,11 @@ export interface EntryDetail {
   target?: string;
   fullPath: string;
   protected: boolean;
+}
+
+function parseRootId(rootId: string): { kind: RootKind; id: string } {
+  const [kind, id] = rootId.split(":");
+  return { kind: kind as RootKind, id };
 }
 
 export class TroveError extends Error {
@@ -289,13 +295,14 @@ export const api = {
     sourcePolicy?: string;
     verify?: string;
     ackProtected?: boolean;
+    purge?: boolean;
     clientRequestId?: string;
   }) => request<Plan>("POST", "operations/plan", { body: req }),
   execute: (planId: string, token: string, decision?: string) =>
     request<{ status: string }>("POST", "operations/execute", {
       body: { planId, token, decision: decision ?? "" },
     }),
-  submitJob: (planId: string, token: string, clientRequestId?: string) =>
+  submitJob: (planId: string, token: string | undefined, clientRequestId?: string) =>
     request<Job>("POST", "job_submit", { body: { planId, token, clientRequestId } }),
   jobs: (limit = 50) => request<{ jobs: Job[] }>("GET", "jobs", { query: { limit } }),
   job: (id: string) => request<Job>("GET", "jobs/" + encodeURIComponent(id)),
@@ -312,6 +319,22 @@ export const api = {
       `jobs/${encodeURIComponent(id)}/events`,
       { query: { since } },
     ),
+  uploadUrl: (rootId: string, dir: string, name: string, policy: string) => {
+    const url = new URL(boot.api, window.location.origin);
+    url.searchParams.set("cmd", "upload");
+    url.searchParams.set("rootId", rootId);
+    url.searchParams.set("dir", dir);
+    url.searchParams.set("name", name);
+    url.searchParams.set("policy", policy);
+    return url.toString();
+  },
+  trashList: (rootId: string) =>
+    request<{ entries: { name: string; originRel: string; kind: string; size: number; deletedAt: string }[] }>(
+      "GET", "trash_list", { query: { rootId } }),
+  trashRestore: (rootId: string, name: string) =>
+    request<{ status: string; restored: string }>("POST", "trash_restore", {
+      body: { root: parseRootId(rootId), name },
+    }),
   settings: () => request<Settings>("GET", "settings"),
   // POST from the browser (nginx CSRF layer); the gateway forwards as PUT.
   saveSettings: (patch: Partial<Settings>) => request<{ status: string }>("POST", "settings", { body: patch }),
@@ -323,6 +346,50 @@ export const api = {
       truncated: boolean;
       hits: { path: string; kind: string; size: number; mtime: string }[];
     }>("GET", "search", { query: { rootId, path, q, limit } }),
+  uploadFile: (opts: {
+    rootId: string;
+    dir: string;
+    name: string;
+    policy?: string;
+    file: File;
+    onProgress?: (loaded: number, total: number) => void;
+  }): Promise<{ status: string; name: string; size: number }> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const url = new URL(boot.api, window.location.origin);
+      url.searchParams.set("cmd", "upload");
+      url.searchParams.set("rootId", opts.rootId);
+      url.searchParams.set("dir", opts.dir);
+      url.searchParams.set("name", opts.name);
+      url.searchParams.set("policy", opts.policy ?? "rename");
+      xhr.open("PUT", url.toString());
+      xhr.setRequestHeader("X-Trove-Csrf", boot.csrf);
+      xhr.upload.onprogress = (ev) => {
+        opts.onProgress?.(ev.loaded, ev.total);
+      };
+      xhr.onload = () => {
+        const ct = xhr.getResponseHeader("Content-Type") ?? "";
+        if (!ct.includes("json")) {
+          reject(new TroveError("CSRF_INVALID", "security token expired; page reload required", true, xhr.status));
+          return;
+        }
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && data.status === "ok") {
+            resolve(data);
+          } else if (data.error) {
+            reject(new TroveError(data.error.code, data.error.message, !!data.error.recoverable, xhr.status));
+          } else {
+            reject(new TroveError("GATEWAY", "unexpected upload response", true, xhr.status));
+          }
+        } catch {
+          reject(new TroveError("GATEWAY", "unexpected upload response", true, xhr.status));
+        }
+      };
+      xhr.onerror = () => reject(new TroveError("NETWORK", "network error during upload", true, 0));
+      xhr.send(opts.file);
+    });
+  },
   downloadUrl: (rootId: string, path: string) => {
     const url = new URL(boot.api, window.location.origin);
     url.searchParams.set("cmd", "download");

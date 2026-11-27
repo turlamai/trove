@@ -20,6 +20,9 @@ import (
 func (e *Executor) Delete(man *planner.Manifest, h *Hooks) (*Outcome, error) {
 	h = e.hooks(h)
 	out := &Outcome{}
+	if man.Trash {
+		return e.DeleteWithTrash(man, h, nil)
+	}
 	root, err := e.res.RootOf(man.SourceRoot)
 	if err != nil {
 		return out, err

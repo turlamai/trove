@@ -19,6 +19,7 @@ import {
   PlanDialog,
   RenameDialog,
   ConflictDialog,
+  TrashDialog,
 } from "./dialogs";
 import {
   IconClock,
@@ -32,6 +33,7 @@ import {
   IconSingle,
   IconSSD,
   IconStar,
+  IconTrash,
   IconWarn,
   IconFor,
 } from "./icons";
@@ -61,7 +63,7 @@ interface CtxMenu {
 }
 
 export function App() {
-  const { caps, shares, devices, prefs, toast, toastErr, clipboard, setClipboard, genId, refreshJobs } = useApp();
+  const { caps, shares, devices, prefs, toast, toastErr, clipboard, setClipboard, genId, refreshJobs, queueUploads } = useApp();
   const [panes, setPanes] = useState<PaneState[]>(() => [newPane(null), newPane(null)]);
   const [active, setActive] = useState(0);
   const [dual, setDual] = useState(prefs.dualDefault);
@@ -69,6 +71,7 @@ export function App() {
   const [ctx, setCtx] = useState<CtxMenu | null>(null);
   const [inspect, setInspect] = useState<InspectorTarget | null>(null);
   const [taskCenter, setTaskCenter] = useState(false);
+  const [trashOpen, setTrashOpen] = useState<string | null>(null);
   const [view, setView] = useState<"files" | "settings">("files");
   const dragPaths = useRef<{ paths: string[]; from: number } | null>(null);
 
@@ -533,6 +536,18 @@ export function App() {
               <span class="tv-ic"><IconClock size={15} /></span>
               {t("task.center")}
             </button>
+            <button
+              class="tv-navitem"
+              onClick={() => {
+                const i = active;
+                const r = panes[i].root;
+                if (!r) return;
+                setTrashOpen(`${r.kind}:${r.id}`);
+              }}
+            >
+              <span class="tv-ic"><IconTrash size={15} /></span>
+              {t("nav.trash")}
+            </button>
             <button class="tv-navitem" onClick={() => toast("★ " + t("nav.more"), "warn")}>
               <span class="tv-ic"><IconStar size={15} /></span>
               {t("nav.more")}
@@ -632,6 +647,7 @@ export function App() {
                 onDragStartEntries={(paths) => (dragPaths.current = { paths, from: 0 })}
                 dropActive={dual}
                 dragIn={dual}
+                onUploadFiles={(files) => queueUploads(`${panes[0].root?.kind}:${panes[0].root?.id}`, panes[0].path, files)}
                 onDrop={() => {
                   const d = dragPaths.current;
                   if (d && d.from !== 0 && d.paths.length) void opTransferToOtherPane(d.from, "copy", d.paths);
@@ -653,6 +669,7 @@ export function App() {
                   onDragStartEntries={(paths) => (dragPaths.current = { paths, from: 1 })}
                   dropActive={dual}
                   dragIn={dual}
+                  onUploadFiles={(files) => queueUploads(`${panes[1].root?.kind}:${panes[1].root?.id}`, panes[1].path, files)}
                   onDrop={() => {
                     const d = dragPaths.current;
                     if (d && d.from !== 1 && d.paths.length) void opTransferToOtherPane(d.from, "copy", d.paths);
@@ -768,6 +785,16 @@ export function App() {
           onConflict={(j) => {
             setTaskCenter(false);
             setDialog({ type: "conflicts", jobId: j.id });
+          }}
+        />
+      )}
+      {trashOpen && (
+        <TrashDialog
+          rootId={trashOpen}
+          onClose={() => setTrashOpen(null)}
+          onChanged={() => {
+            refreshJobs();
+            patch(active, {});
           }}
         />
       )}

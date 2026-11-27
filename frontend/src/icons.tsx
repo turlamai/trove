@@ -105,6 +105,9 @@ export const IconChevronRight = (p: P) => <S {...p} d="M9 6l6 6-6 6" />;
 export const IconSearch = (p: P) => (
   <S {...p} d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z M15.5 15.5L21 21" />
 );
+export const IconUpload = (p: P) => (
+  <S {...p} d="M12 20V9 M7 14l5-5 5 5 M5 4h14" />
+);
 export const IconDownload = (p: P) => (
   <S {...p} d="M12 4v11 M7 10l5 5 5-5 M5 20h14" />
 );

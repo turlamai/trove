@@ -52,17 +52,65 @@ export function Inspector({
   const [hash, setHash] = useState<{ state: "idle" | "running" | "done" | "error"; value?: string; jobId?: string }>({
     state: "idle",
   });
+  const [preview, setPreview] = useState<{
+    kind: "image" | "text" | "pdf" | null;
+    url?: string;
+    text?: string;
+    truncated?: boolean;
+  }>({ kind: null });
 
   useEffect(() => {
     setDetail(null);
     setErr(null);
     setHash({ state: "idle" });
+    setPreview({ kind: null });
     if (!target) return;
     api
       .entry(target.rootId, target.path ? `${target.path}/${target.entry.name}` : target.entry.name)
       .then(setDetail)
       .catch((e: unknown) => setErr(e instanceof TroveError ? e.code : "IO_FAILURE"));
   }, [target?.rootId, target?.path, target?.entry.name]);
+
+  // 预览：图片/文本/PDF 走 blob（不执行任何内容；文本有大小封顶）
+  useEffect(() => {
+    if (!target || err) return;
+    const entryName = target.entry.name.toLowerCase();
+    const isImg = /\.(jpe?g|png|gif|webp|bmp|avif|svg)$/i.test(entryName);
+    const isTxt = /\.(txt|md|log|json|xml|csv|srt|nfo|ini|cfg|yaml|yml|toml)$/i.test(entryName);
+    const isPdf = entryName.endsWith(".pdf");
+    if (!isImg && !isTxt && !isPdf) return;
+    if (isTxt && target.entry.size > 262144) return;
+    if ((isImg || isPdf) && target.entry.size > 33554432) return;
+    const url = api.downloadUrl(target.rootId, target.path ? `${target.path}/${target.entry.name}` : target.entry.name);
+    let dead = false;
+    (async () => {
+      try {
+        const res = await fetch(url, { credentials: "same-origin" });
+        if (!res.ok || dead) return;
+        if (isImg) {
+          const blob = await res.blob();
+          if (!dead) setPreview({ kind: "image", url: URL.createObjectURL(blob) });
+        } else if (isPdf) {
+          const blob = await res.blob();
+          const pdfBlob = new Blob([blob], { type: "application/pdf" });
+          if (!dead) setPreview({ kind: "pdf", url: URL.createObjectURL(pdfBlob) });
+        } else {
+          const text = await res.text();
+          if (!dead) setPreview({ kind: "text", text, truncated: text.length >= 262144 });
+        }
+      } catch {
+        /* 预览失败静默（不影响元数据展示） */
+      }
+    })();
+    return () => {
+      dead = true;
+      setPreview((p) => {
+        if (p.url) URL.revokeObjectURL(p.url);
+        return { kind: null };
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target?.rootId, target?.path, target?.entry.name, err]);
 
   if (!target) return null;
   const ic = iconClassForName(target.entry.name, target.entry.kind);
@@ -128,6 +176,16 @@ export function Inspector({
         </div>
         <div class="fname">{target.entry.name}</div>
         <div class="ftype">{t("kind." + target.entry.kind)}</div>
+
+        {preview.kind === "image" && (
+          <img class="tv-preview" src={preview.url} alt="" style="max-width:100%;border-radius:8px;margin-top:8px" />
+        )}
+        {preview.kind === "pdf" && (
+          <embed class="tv-preview" src={preview.url} type="application/pdf" style="width:100%;height:240px;border-radius:8px;margin-top:8px" />
+        )}
+        {preview.kind === "text" && (
+          <pre class="tv-hashout" style="max-height:200px;overflow:auto;margin-top:8px">{preview.text}</pre>
+        )}
 
         {err ? (
           <div class="tv-alert warn" style="margin-top:10px">

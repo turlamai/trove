@@ -1,7 +1,8 @@
 // Dialogs: input, confirm-delete, plan preview, conflict resolution,
 // namespace-mix block, ack. Text contracts follow specification §3.4/§D.5/D.6.
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import {
+  api,
   Conflict,
   Entry,
   formatBytes,
@@ -9,6 +10,7 @@ import {
   Job,
   Node,
   Plan,
+  RootKind,
 } from "./api";
 import {
   IconCheck,
@@ -18,9 +20,11 @@ import {
   IconInfo,
   IconMove,
   IconShield,
+  IconTrash,
   IconWarn,
 } from "./icons";
 import { errText, t } from "./i18n";
+import { useApp } from "./store";
 
 interface DialogChrome {
   children: preact.ComponentChildren;
@@ -545,6 +549,145 @@ function ConflictItem(d: { conflict: Conflict; decision?: string; onDecide: (r: 
       </div>
     </div>
   );
+}
+
+export interface TrashDialogProps {
+  rootId: string;
+  onClose: () => void;
+  onChanged: () => void;
+}
+export function TrashDialog(p: TrashDialogProps) {
+  const { toast, toastErr } = useApp();
+  const [entries, setEntries] = useState<
+    { name: string; originRel: string; kind: string; size: number; deletedAt: string }[] | null
+  >(null);
+  const [busy, setBusy] = useState(false);
+  const load = async () => {
+    try {
+      const r = await api.trashList(p.rootId);
+      setEntries(r.entries);
+    } catch (e) {
+      toastErr(e);
+    }
+  };
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.rootId]);
+  const act = async (fn: () => Promise<unknown>, okText: string) => {
+    setBusy(true);
+    try {
+      await fn();
+      toast(okText);
+      await load();
+      p.onChanged();
+    } catch (e) {
+      toastErr(e);
+    }
+    setBusy(false);
+  };
+  return (
+    <Chrome
+      wide
+      title={t("nav.trash")}
+      icon={<IconTrash />}
+      onClose={p.onClose}
+      foot={
+        <>
+          <span class="tv-spacer" />
+          <button
+            class="tv-btn danger"
+            disabled={busy || !entries || entries.length === 0}
+            onClick={() =>
+              act(async () => {
+                if (!entries) return;
+                const plan = await api.plan({
+                  action: "delete",
+                  targets: entries.map((e) => ({
+                    root: parseRootId2(p.rootId),
+                    path: ".trove-trash/" + e.name,
+                  })),
+                  purge: true,
+                  conflictPolicy: "skip",
+                });
+                await api.submitJob(plan.id, plan.token);
+              }, t("trash.purgeAll"))
+            }
+          >
+            {t("trash.purgeAll")}
+          </button>
+        </>
+      }
+    >
+      {entries === null ? (
+        <div class="tv-spinner" />
+      ) : entries.length === 0 ? (
+        <div class="tv-state">{t("trash.empty")}</div>
+      ) : (
+        <table class="tv-table">
+          <thead>
+            <tr>
+              <th>{t("trash.name")}</th>
+              <th style="width:110px">{t("col.size")}</th>
+              <th style="width:150px">{t("trash.deletedAt")}</th>
+              <th style="width:190px" />
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((e) => (
+              <tr key={e.name} class="row">
+                <td>
+                  <div class="tv-cellname">
+                    <span class="nm" title={e.name}>{e.name}</span>
+                    <span class="tgt">{e.originRel || "—"}</span>
+                  </div>
+                </td>
+                <td class="tv-num">{formatBytes(e.size)}</td>
+                <td class="tv-num">{formatTime(e.deletedAt)}</td>
+                <td>
+                  <div style="display:flex;gap:6px;justify-content:flex-end">
+                    <button
+                      class="tv-btn"
+                      disabled={busy}
+                      onClick={() =>
+                        act(async () => {
+                          await api.trashRestore(p.rootId, e.name);
+                        }, t("trash.restored"))
+                      }
+                    >
+                      {t("trash.restore")}
+                    </button>
+                    <button
+                      class="tv-btn danger"
+                      disabled={busy}
+                      onClick={() =>
+                        act(async () => {
+                          const plan = await api.plan({
+                            action: "delete",
+                            targets: [{ root: parseRootId2(p.rootId), path: ".trove-trash/" + e.name }],
+                            purge: true,
+                            conflictPolicy: "skip",
+                          });
+                          await api.submitJob(plan.id, plan.token);
+                        }, t("trash.purge"))
+                      }
+                    >
+                      {t("trash.purge")}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Chrome>
+  );
+}
+
+function parseRootId2(rootId: string): { kind: RootKind; id: string } {
+  const [kind, id] = rootId.split(":");
+  return { kind: kind as RootKind, id };
 }
 
 export function JobErrorDialog(d: { job: Job; onClose: () => void; onRetry: () => void }) {

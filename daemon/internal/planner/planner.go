@@ -27,6 +27,7 @@ import (
 type Settings struct {
 	PhysicalWrite bool   // allow writes into disk/pool roots (V1 default false)
 	ProtectedMode string // "deny" (default) | "ack" (writes need explicit ack)
+	Trash         bool   // user-share deletes move to per-share trash (default true)
 	DataDirOK     bool   // job persistence available — writes refuse without it
 	Concurrency   int
 }
@@ -61,6 +62,7 @@ type Manifest struct {
 	Policy      model.ConflictPolicy
 	SourcePolic model.SourceChangedPolicy
 	Verify      model.VerifyLevel
+	Trash       bool
 	TotalBytes  int64
 	Files       int64
 	Dirs        int64
@@ -420,7 +422,11 @@ func (p *Planner) planDelete(req model.PlanRequest, plan *model.Plan, s Settings
 	}
 
 	root := req.Targets[0].Root
-	man := &Manifest{Action: model.ActDelete, SourceRoot: root, CreatedAt: time.Now(), DeleteTargets: req.Targets}
+	man := &Manifest{
+		Action: model.ActDelete, SourceRoot: root, CreatedAt: time.Now(),
+		DeleteTargets: req.Targets,
+		Trash:         s.Trash && !req.Purge && root.Kind == model.KindShare,
+	}
 	for _, t := range req.Targets {
 		if t.Root != root {
 			return nil, troveerr.New(troveerr.BadRequest, "delete targets must share one root")
@@ -437,7 +443,9 @@ func (p *Planner) planDelete(req model.PlanRequest, plan *model.Plan, s Settings
 			Rel: t.Path, Kind: st.Kind, Size: st.Size, Mode: st.Mode,
 			MtimeS: st.Mtime, MtimeNs: st.MtimeN, Dev: st.Dev, Ino: st.Ino,
 		})
-		if st.Kind == model.EntryDir {
+		if st.Kind == model.EntryDir && !man.Trash {
+			// permanent delete walks children (children-first execution);
+			// trash mode moves whole subtrees by rename — no walk needed
 			_, err := p.fs.Walk(p.rootOf(t.Root), t.Path, func(rel string, sst *resolver.StatInfo) error {
 				if rel == t.Path {
 					return nil
@@ -453,8 +461,10 @@ func (p *Planner) planDelete(req model.PlanRequest, plan *model.Plan, s Settings
 			}
 		}
 	}
-	// Execution order: children before parents — reverse the parent-first list.
-	reverseItems(man.Items)
+	if !man.Trash {
+		// Execution order: children before parents — reverse the parent-first list.
+		reverseItems(man.Items)
+	}
 	for i := range man.Items {
 		switch man.Items[i].Kind {
 		case model.EntryFile:
@@ -467,11 +477,17 @@ func (p *Planner) planDelete(req model.PlanRequest, plan *model.Plan, s Settings
 	plan.Items = int64(len(man.Items))
 	plan.TargetDir = &model.Node{Root: root}
 	plan.Targets = req.Targets
+	plan.Trash = man.Trash
 	man.TotalBytes = plan.Bytes
 	man.Files = plan.Files
 	man.Dirs = plan.Dirs
-	plan.Risks = append(plan.Risks, model.Risk{
-		Code: "DELETE_NO_TRASH", Note: "deletion is permanent in V1; there is no trash bin"})
+	if man.Trash {
+		plan.Risks = append(plan.Risks, model.Risk{
+			Code: "DELETE_TRASH", Note: "deleted entries move to the share's .trove-trash (recoverable)"})
+	} else {
+		plan.Risks = append(plan.Risks, model.Risk{
+			Code: "DELETE_NO_TRASH", Note: "deletion is permanent; there is no trash bin"})
+	}
 	return man, nil
 }
 

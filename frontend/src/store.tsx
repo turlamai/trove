@@ -10,6 +10,18 @@ export interface Toast {
   text: string;
 }
 
+export interface UploadTask {
+  id: number;
+  name: string;
+  dir: string;
+  rootId: string;
+  loaded: number;
+  total: number;
+  state: "uploading" | "done" | "error";
+  error?: string;
+  _file?: File;
+}
+
 export interface Clipboard {
   mode: "copy" | "cut";
   rootId: string;
@@ -57,6 +69,9 @@ interface AppState {
   setClipboard: (c: Clipboard | null) => void;
   reload: () => void;
   genId: () => string;
+  uploads: UploadTask[];
+  queueUploads: (rootId: string, dir: string, files: File[]) => void;
+  clearUploads: () => void;
 }
 
 const Ctx = createContext<AppState>(null as unknown as AppState);
@@ -75,7 +90,9 @@ export function AppProvider({ children }: { children: preact.ComponentChildren }
   const [clipboard, setClipboardState] = useState<Clipboard | null>(null);
   const [prefsState, setPrefsState] = useState<UIPrefs>(loadPrefs);
   const [tick, setTick] = useState(0);
+  const [uploads, setUploadsState] = useState<UploadTask[]>([]);
   const jobsActive = useRef(false);
+  const uploadSeq = useRef(1);
 
   const prefs = prefsState;
   setLang(prefs.lang);
@@ -157,6 +174,45 @@ export function AppProvider({ children }: { children: preact.ComponentChildren }
     (crypto?.randomUUID?.() ??
       `req-${Date.now()}-${Math.random().toString(36).slice(2)}`) as string;
 
+  const queueUploads = (rootId: string, dir: string, files: File[]) => {
+    const batch = files.map((f) => ({
+      id: uploadSeq.current++,
+      name: f.name,
+      dir,
+      rootId,
+      loaded: 0,
+      total: f.size,
+      state: "uploading" as const,
+      _file: f,
+    }));
+    setUploadsState((u) => [...u, ...batch]);
+    // 逐个顺序上传（并发 1，避免占满上行）
+    (async () => {
+      const { api } = await import("./api");
+      for (const t of batch) {
+        try {
+          await api.uploadFile({
+            rootId,
+            dir,
+            name: t.name,
+            policy: "rename",
+            file: t._file,
+            onProgress: (loaded, total) => {
+              setUploadsState((u) => u.map((x) => (x.id === t.id ? { ...x, loaded, total } : x)));
+            },
+          });
+          setUploadsState((u) => u.map((x) => (x.id === t.id ? { ...x, state: "done" } : x)));
+        } catch (e) {
+          setUploadsState((u) =>
+            u.map((x) => (x.id === t.id ? { ...x, state: "error", error: String(e) } : x)));
+        }
+      }
+      setTimeout(() => setUploadsState((u) => u.filter((x) => x.state === "uploading")), 6000);
+    })();
+  };
+
+  const clearUploads = () => setUploadsState([]);
+
   const shares = roots.filter((r) => r.kind === "share");
   const devices = roots.filter((r) => r.kind !== "share");
 
@@ -189,6 +245,9 @@ export function AppProvider({ children }: { children: preact.ComponentChildren }
         },
         reload,
         genId,
+        uploads,
+        queueUploads,
+        clearUploads,
       }}
     >
       {children}

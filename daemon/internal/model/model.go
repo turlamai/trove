@@ -105,6 +105,8 @@ type PlanRequest struct {
 	ConflictPolicy ConflictPolicy      `json:"conflictPolicy,omitempty"`
 	SourcePolicy   SourceChangedPolicy `json:"sourcePolicy,omitempty"`
 	Verify         VerifyLevel         `json:"verify,omitempty"`
+	// Purge bypasses the trash for a delete: permanent removal.
+	Purge bool `json:"purge,omitempty"`
 	// AckProtected confirms an intentional write into a protected share
 	// (appdata/domains/system/...) when the plugin settings allow it.
 	AckProtected bool `json:"ackProtected,omitempty"`
@@ -145,6 +147,7 @@ type Plan struct {
 	Estimate    bool       `json:"estimate"`      // true when the walk hit scan limits
 	Conflicts   []Conflict `json:"conflicts,omitempty"`
 	Risks       []Risk     `json:"risks,omitempty"`
+	Trash       bool       `json:"trash,omitempty"` // delete will move to trash
 	NeedsAck    bool       `json:"needsAck,omitempty"` // protected share write
 	Token       string     `json:"token,omitempty"`
 	ExpiresAt   time.Time  `json:"expiresAt"`
