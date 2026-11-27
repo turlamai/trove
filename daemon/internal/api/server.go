@@ -31,6 +31,9 @@ import (
 // Version is injected at build time.
 var Version = "dev"
 
+// StartedAt records daemon start (uptime reporting in debug diagnostics).
+var StartedAt = time.Now()
+
 // Deps bundles the server's collaborators.
 type Deps struct {
 	Resolver *resolver.Resolver
@@ -688,7 +691,11 @@ func (d Deps) handleDebugLog(w http.ResponseWriter, r *http.Request) {
 	if len(log) > 32*1024 {
 		log = log[len(log)-32*1024:]
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"log": log})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"log":     log,
+		"pid":     os.Getpid(),
+		"uptimeS": int(time.Since(StartedAt).Seconds()),
+	})
 }
 
 func (d Deps) handleSettingsGet(w http.ResponseWriter, r *http.Request) {

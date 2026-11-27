@@ -31,6 +31,7 @@ export interface PaneState {
   cursor: number;
   history: { root: RootRef; path: string }[];
   histIdx: number;
+  searchHits: { path: string; kind: string; size: number; mtime: string }[] | null;
 }
 
 export function newPane(root: RootRef | null = null): PaneState {
@@ -48,6 +49,7 @@ export function newPane(root: RootRef | null = null): PaneState {
     cursor: -1,
     history: root ? [{ root, path: "" }] : [],
     histIdx: root ? 0 : -1,
+    searchHits: null,
   };
 }
 
@@ -267,6 +269,14 @@ export function FilePane(props: PaneProps) {
             {t("tb.refresh")}
           </button>
         </div>
+      ) : s.searchHits !== null ? (
+        <SearchResultsTable
+          hits={s.searchHits}
+          onOpen={(p) => {
+            const parent = p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
+            onChange({ path: parent, searchHits: null, filter: "" }, { pushHistory: true });
+          }}
+        />
       ) : visible.length === 0 ? (
         <div class="tv-state">
           {IconFor("dir", { size: 36 })}
@@ -403,11 +413,55 @@ export function FilePane(props: PaneProps) {
       {/* status bar */}
       <div class="tv-statusbar">
         <span>
-          {t("ft.items", { n: s.total })}
-          {s.entries.length < s.total ? ` (${s.entries.length})` : ""}
+          {s.searchHits !== null
+            ? t("ft.items", { n: s.searchHits.length })
+            : t("ft.items", { n: s.total }) + (s.entries.length < s.total ? ` (${s.entries.length})` : "")}
         </span>
         <span>{selCount > 0 ? t("ft.selected", { n: selCount, bytes: formatBytes(selBytes) }) : ""}</span>
       </div>
+    </div>
+  );
+}
+
+function SearchResultsTable(d: {
+  hits: { path: string; kind: string; size: number; mtime: string }[];
+  onOpen: (p: string) => void;
+}) {
+  return (
+    <div class="tv-tablewrap">
+      <table class="tv-table">
+        <thead>
+          <tr>
+            <th style="width:34px" />
+            <th>{t("col.name")}</th>
+            <th style="width:110px">{t("col.size")}</th>
+            <th style="width:150px">{t("col.mtime")}</th>
+            <th style="width:110px">{t("col.kind")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {d.hits.map((h) => (
+            <tr key={h.path} class="row" onDblClick={() => d.onOpen(h.path)}>
+              <td>
+                <span class={"tv-ic " + h.kind}>
+                  {IconFor(h.kind, { size: 16 })}
+                </span>
+              </td>
+              <td>
+                <div class="tv-cellname">
+                  <span class="nm" title={h.path}>
+                    {h.path.split("/").pop()}
+                  </span>
+                  <span class="tgt">{h.path}</span>
+                </div>
+              </td>
+              <td class="tv-num">{h.kind === "dir" ? "—" : formatBytes(h.size)}</td>
+              <td class="tv-num">{formatTime(h.mtime)}</td>
+              <td class="tv-dim">{h.kind}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

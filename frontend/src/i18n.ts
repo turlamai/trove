@@ -20,6 +20,9 @@ const zh: Record<string, string> = {
   "tb.single": "单窗格",
   "tb.dual": "双窗格",
   "tb.filter": "筛选当前目录",
+  "tb.searchShare": "回车在共享内搜索",
+  "st.searchResults": "共享内搜索：{q}（{n} 项，点击进入所在目录）",
+  "act.move": "移动",
   // breadcrumb
   "bc.root": "根",
   // table
@@ -196,6 +199,9 @@ const en: Record<string, string> = {
   "tb.single": "Single pane",
   "tb.dual": "Dual pane",
   "tb.filter": "Filter current directory",
+  "tb.searchShare": "Enter searches within the share",
+  "st.searchResults": "Search in share: {q} ({n} hits, click to open folder)",
+  "act.move": "Move",
   "bc.root": "Root",
   "col.name": "Name",
   "col.size": "Size",

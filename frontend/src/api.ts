@@ -92,6 +92,8 @@ export interface Job {
   totalBytes: number;
   doneBytes: number;
   currentFile?: string;
+  speedBps?: number;
+  etaSeconds?: number;
   errorCode?: string;
   message?: string;
   warnings?: string[];

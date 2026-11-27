@@ -22,14 +22,24 @@ if [ "${1:-}" != "--restart" ] && [ -S "$SOCK" ]; then
   fi
 fi
 
-# Stop a running instance and wait for it to let go of the socket.
-pkill -TERM -x troved 2>/dev/null
-for _ in $(seq 1 20); do
-  pgrep -x troved >/dev/null 2>&1 || break
-  sleep 0.3
-done
-pkill -KILL -x troved 2>/dev/null
-rm -f "$SOCK"
+# --restart owns the kill path (install/upgrade). The gateway's on-demand
+# path must never kill a live daemon: a slow health check under heavy I/O
+# used to trigger a restart that interrupted running jobs.
+if [ "${1:-}" != "--restart" ]; then
+  if pgrep -x troved >/dev/null 2>&1; then
+    echo "$(date '+%b %e %T') [start-daemon] troved alive but unhealthy; not restarting (use --restart)" >> "$LOG" 2>/dev/null
+    exit 1
+  fi
+  rm -f "$SOCK"
+else
+  pkill -TERM -x troved 2>/dev/null
+  for _ in $(seq 1 20); do
+    pgrep -x troved >/dev/null 2>&1 || break
+    sleep 0.3
+  done
+  pkill -KILL -x troved 2>/dev/null
+  rm -f "$SOCK"
+fi
 
 if [ ! -x "$BIN" ]; then
   echo "troved binary missing: $BIN" >> "$LOG" 2>/dev/null

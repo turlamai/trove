@@ -143,8 +143,13 @@ export function TaskBar({
               <button
                 class="tv-btn ghost"
                 title={t("task.cancel")}
-                onClick={() => {
-                  useAppCancel(j.id, toast);
+                onClick={async () => {
+                  try {
+                    await api.cancelJob(j.id);
+                    toast(t("task.cancelRequested"));
+                  } catch (e) {
+                    toast(String(e), "err");
+                  }
                 }}
               >
                 <IconCancel size={13} />
@@ -156,15 +161,14 @@ export function TaskBar({
   );
 }
 
-// small helper so the cancel button stays terse
 import { api } from "./api";
-async function useAppCancel(id: string, toast: (s: string, k?: "ok" | "err" | "warn") => void) {
-  try {
-    await api.cancelJob(id);
-    toast(t("task.cancelRequested"));
-  } catch (e) {
-    toast(String(e), "err");
-  }
+
+// seconds → m:ss
+function fmtEta(sec: number): string {
+  const s = Math.max(0, Math.round(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2, "0")}`;
 }
 
 export function TaskCenter({
@@ -184,8 +188,7 @@ export function TaskCenter({
   const done = jobs.filter((j) => j.state === "completed" || j.state === "cancelled");
   const failed = jobs.filter((j) => j.state === "failed" || j.state === "failed_retryable");
   const list = filter === "running" ? running : filter === "done" ? done : failed;
-  const totalSpeed = 0; // speed comes from daemon deltas (computed in JobRow in a later rev)
-  void totalSpeed;
+  const totalSpeed = running.reduce((a, j) => a + (j.speedBps ?? 0), 0);
 
   return (
     <div class="tv-taskcenter-overlay" onClick={(ev: MouseEvent) => {
@@ -226,7 +229,10 @@ export function TaskCenter({
             <div class="tv-statcard">
               <IconClock />
               <div>
-                <div class="lbl">{t("task.hint")}</div>
+                <div class="num" style="font-size:15px">
+                  {totalSpeed > 0 ? formatBytes(totalSpeed) + "/s" : "—"}
+                </div>
+                <div class="lbl">{t("task.speed")}</div>
               </div>
             </div>
           </div>
@@ -304,8 +310,13 @@ function JobRow(d: {
   const j = d.job;
   const src = j.plan?.source?.path || "—";
   const dst = j.plan?.targetDir || "—";
-  const speed = j.doneBytes > 0 && j.startedAt ? "" : "";
-  void speed;
+  const metered = j.action === "copy" || j.action === "move";
+  const speed = metered && j.speedBps && j.speedBps > 0 ? formatBytes(j.speedBps) + "/s" : "";
+  const remain = j.totalBytes - j.doneBytes;
+  const eta =
+    metered && j.etaSeconds && j.etaSeconds > 0 && remain > 0
+      ? "剩余 " + fmtEta(j.etaSeconds)
+      : "";
   return (
     <div class="tv-jobrow">
       <div class="tv-jobrow-top">
@@ -356,6 +367,12 @@ function JobRow(d: {
         <span>
           {j.doneItems}/{j.totalItems}
         </span>
+        {speed && (
+          <span>
+            {t("task.speed")} {speed}
+          </span>
+        )}
+        {eta && <span>{eta}</span>}
         <span>{formatTime(j.createdAt)}</span>
         {j.errorCode && <span style="color:var(--tv-red)">{errText(j.errorCode)}</span>}
         {j.message && <span>{j.message}</span>}

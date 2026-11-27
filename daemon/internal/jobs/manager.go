@@ -44,10 +44,12 @@ type runtime struct {
 	manifest *planner.Manifest
 	cancel   bool
 	// current staging file (for cleanup on abort)
-	staging    *executor.StagingRef
-	committed  map[string]bool
-	lastProg   time.Time
-	hashOffset int
+	staging   *executor.StagingRef
+	committed map[string]bool
+	lastProg  time.Time
+	// throughput sampling window (speed/ETA estimation)
+	lastSampleAt   time.Time
+	lastSampleByte int64
 }
 
 // NewManager creates the manager. Concurrency is clamped to [1,4].
@@ -419,7 +421,7 @@ func (m *Manager) hooks(rt *runtime) *executor.Hooks {
 			if current != "" {
 				rt.job.CurrentFile = current
 			}
-			updateSpeed(rt)
+			m.sampleSpeedLocked(rt)
 			// Throttled persistence: at most every 500 ms.
 			if time.Since(rt.lastProg) > 500*time.Millisecond {
 				rt.lastProg = time.Now()
@@ -472,8 +474,31 @@ func (m *Manager) hooks(rt *runtime) *executor.Hooks {
 	}
 }
 
-func updateSpeed(rt *runtime) {
-	// Speed/ETA are computed by the API layer from deltas; keep fields stable.
+// sampleSpeedLocked updates the speed/ETA estimate over a sliding window.
+// Only byte-metered actions (copy/move-with-copy) report speed; item-metered
+// jobs (delete/hash) stay at zero rather than inventing MB/s (spec §D.4).
+func (m *Manager) sampleSpeedLocked(rt *runtime) {
+	now := time.Now()
+	if rt.lastSampleAt.IsZero() {
+		rt.lastSampleAt = now
+		rt.lastSampleByte = rt.job.DoneBytes
+		return
+	}
+	dt := now.Sub(rt.lastSampleAt).Seconds()
+	if dt < 0.75 {
+		return
+	}
+	speed := float64(rt.job.DoneBytes-rt.lastSampleByte) / dt
+	if speed > 0 {
+		rt.job.SpeedBPS = speed
+		if remain := rt.job.TotalBytes - rt.job.DoneBytes; remain > 0 {
+			rt.job.ETASeconds = float64(remain) / speed
+		} else {
+			rt.job.ETASeconds = 0
+		}
+	}
+	rt.lastSampleAt = now
+	rt.lastSampleByte = rt.job.DoneBytes
 }
 
 func (m *Manager) finish(rt *runtime, outcome *executor.Outcome, runErr error) {
@@ -509,6 +534,8 @@ func (m *Manager) finish(rt *runtime, outcome *executor.Outcome, runErr error) {
 		}
 	}
 	rt.job.CurrentFile = ""
+	rt.job.SpeedBPS = 0
+	rt.job.ETASeconds = 0
 	if outcome != nil {
 		rt.job.DoneItems = outcome.Items
 		rt.job.DoneBytes = outcome.Bytes

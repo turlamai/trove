@@ -116,6 +116,7 @@ func main() {
 	})
 
 	api.Version = version
+	api.StartedAt = time.Now()
 
 	dep := api.Deps{
 		Resolver: res,
