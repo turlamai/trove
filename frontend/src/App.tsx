@@ -591,17 +591,9 @@ export function App() {
 
         {/* workspace */}
         <div class="tv-work">
-          {/* header strip */}
-          <div style="display:flex;align-items:center;gap:8px;flex:none">
-            <button
-              class="tv-btn ghost"
-              onClick={() => setView(view === "files" ? "settings" : "files")}
-            >
-              <IconFolder size={14} />
-              {view === "files" ? t("app.title") : t("set.title")}
-            </button>
-            <span class="tv-badge" />
-            <span class="tv-spacer" style="flex:1" />
+          {/* header strip: pane toggle only — the WebGUI chrome owns the
+              page title, so the app starts directly with content */}
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none">
             <div style="display:flex;gap:4px;border:1px solid var(--tv-border-strong);border-radius:6px;padding:2px">
               <button
                 class={"tv-btn seg" + (!dual ? " active" : "")}
