@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.17">
+<!ENTITY version     "2026.12.18">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,11 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.18
+- Fix: the Dashboard tile's "Open file manager" button pointed at the
+  retired SHARES embed (/Shares/Trove, 404); it now opens the standalone
+  page under Tools.
+
 ### 2026.12.17
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
