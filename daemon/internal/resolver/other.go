@@ -63,3 +63,5 @@ func UniqueName(int, string) string { return "" }
 func LastDotIdx(string) int { return -1 }
 func Uitoa(int) string { return "" }
 func ShortHex() string { return "" }
+
+func MoveNoReplace(int, string, int, string, bool) error { return unsupported("MoveNoReplace") }

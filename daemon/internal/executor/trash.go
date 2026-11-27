@@ -321,11 +321,12 @@ func (e *Executor) TrashRestore(root model.RootRef, name string) (string, error)
 		return "", troveerr.Wrap(troveerr.IOFailure, err, "open trash dir")
 	}
 	records, err := e.readSidecarAll(tres)
-	originRel := ""
+	originRel, originKind := "", ""
 	if err == nil {
 		for i := range records {
 			if records[i].Name == name {
 				originRel = records[i].OriginRel
+				originKind = records[i].Kind
 			}
 		}
 	}
@@ -359,7 +360,8 @@ func (e *Executor) TrashRestore(root model.RootRef, name string) (string, error)
 		return "", troveerr.New(troveerr.NotFound,
 			"origin directory no longer exists; restore manually or purge")
 	}
-	if err := resolver.RenameAt(tfd, name, ofd, originName, resolver.RenameNoReplace); err != nil {
+	isDir := strings.EqualFold(originKind, string(model.EntryDir))
+	if err := resolver.MoveNoReplace(tfd, name, ofd, originName, isDir); err != nil {
 		if !os.IsExist(err) {
 			resolver.CloseFD(ofd)
 			pres.Close()

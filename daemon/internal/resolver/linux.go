@@ -545,3 +545,28 @@ func shortHex() string {
 	_, _ = rand.Read(b[:])
 	return hex.EncodeToString(b[:])
 }
+
+// MoveNoReplace moves src→dst refusing to replace an existing destination,
+// with a POSIX-atomic primitive: linkat+unlinkat for files (kernel-
+// guaranteed EEXIST, immune to FUSE flag quirks), renameat2 NOREPLACE for
+// directories with an existence-probe fallback.
+func MoveNoReplace(srcFd int, srcName string, dstFd int, dstName string, isDir bool) error {
+	if !isDir {
+		if err := unix.Linkat(srcFd, srcName, dstFd, dstName, 0); err != nil {
+			return err // EEXIST surfaces here atomically
+		}
+		return unix.Unlinkat(srcFd, srcName, 0)
+	}
+	err := unix.Renameat2(srcFd, srcName, dstFd, dstName, unix.RENAME_NOREPLACE)
+	if err == nil {
+		return nil
+	}
+	if !(errors.Is(err, unix.EINVAL) || errors.Is(err, unix.ENOSYS) ||
+		errors.Is(err, unix.EOPNOTSUPP) || errors.Is(err, unix.EPERM)) {
+		return err
+	}
+	if _, err2 := FstatAt(dstFd, dstName); err2 == nil {
+		return unix.EEXIST
+	}
+	return unix.Renameat(srcFd, srcName, dstFd, dstName)
+}

@@ -230,8 +230,7 @@ func (e *Executor) transferEntry(srcRes *resolver.Resolved, item *planner.Item,
 
 	// Same-filesystem move: atomic per-entry rename, no copy phase.
 	if man.Action == model.ActMove && sameDev {
-		err := resolver.RenameAt(srcRes.ParentFd, srcRes.Name, dstDirFd, dstName,
-			resolver.RenameNoReplace)
+		err := resolver.MoveNoReplace(srcRes.ParentFd, srcRes.Name, dstDirFd, dstName, false)
 		if os.IsExist(err) {
 			resolved, ok := e.resolveConflict(dstRel, dstName, &srcRes.Stat, dstDirFd, man, h, out)
 			if !ok {
@@ -241,8 +240,7 @@ func (e *Executor) transferEntry(srcRes *resolver.Resolved, item *planner.Item,
 				// overwrite decision: atomic replace
 				err = resolver.RenameAt(srcRes.ParentFd, srcRes.Name, dstDirFd, dstName, 0)
 			} else {
-				err = resolver.RenameAt(srcRes.ParentFd, srcRes.Name, dstDirFd, resolved,
-					resolver.RenameNoReplace)
+				err = resolver.MoveNoReplace(srcRes.ParentFd, srcRes.Name, dstDirFd, resolved, false)
 			}
 		}
 		if err != nil {
@@ -309,8 +307,8 @@ func (e *Executor) transferEntry(srcRes *resolver.Resolved, item *planner.Item,
 	resolver.CloseFD(tfd)
 	tfd = -1
 
-	// Commit — atomic rename; NOREPLACE re-checks the race window.
-	err = resolver.RenameAt(dstDirFd, stagingName, dstDirFd, target, resolver.RenameNoReplace)
+	// Commit — atomic no-replace move (linkat+unlinkat on files).
+	err = resolver.MoveNoReplace(dstDirFd, stagingName, dstDirFd, target, false)
 	if os.IsExist(err) {
 		// A conflicting target appeared between pre-check and commit.
 		resolved, ok := e.resolveConflict(dstRel, dstName, &srcRes.Stat, dstDirFd, man, h, out)
@@ -323,7 +321,7 @@ func (e *Executor) transferEntry(srcRes *resolver.Resolved, item *planner.Item,
 			// overwrite decision: atomic replace of the fully verified file
 			err = resolver.RenameAt(dstDirFd, stagingName, dstDirFd, dstName, 0)
 		} else {
-			err = resolver.RenameAt(dstDirFd, stagingName, dstDirFd, resolved, resolver.RenameNoReplace)
+			err = resolver.MoveNoReplace(dstDirFd, stagingName, dstDirFd, resolved, false)
 		}
 	}
 	if err != nil {
