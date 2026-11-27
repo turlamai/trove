@@ -84,8 +84,8 @@ The Linux syscall layer (openat2 containment, executor semantics) is covered by 
 
 ## Status & roadmap
 
-- **V1 (this preview)** — browsing, dual-pane, safe operations, task center, settings, i18n
-- **V1.5 (planned)** — upload, previews (sandboxed), batch rename preview, archives, configurable trash (only after its own safety review)
+- **V1 + V1.5 core (this preview)** — browsing, dual-pane, safe operations, task center, settings, i18n, **upload, image/text/PDF previews, per-share trash (restore/purge), dashboard tile**
+- **Next** — batch rename preview, archives, range-based media preview
 - Physical-view writes stay disabled by default; cross-view mixing stays refused unconditionally
 
 ## License

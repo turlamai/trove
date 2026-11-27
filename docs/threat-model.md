@@ -37,6 +37,25 @@ the file names/content they may plant.
 | A4 concurrent jobs | Default concurrency 1 (configurable ≤ 4); conflict decisions pause jobs rather than guessing. |
 | A5 supply chain | `.plg` pins the release URL and SHA-256 of the `.txz`; releases carry `SHA256SUMS`; no unpinned `latest` fetches; build from clean checkout in CI. |
 
+## V1.5 surfaces (threat-model deltas)
+
+- **Upload**: PUT raw bytes through the gateway (X-Trove-Csrf header; nginx
+  form-field CSRF does not apply to PUT), streamed to a staging file inside
+  the target directory, fsynced, size-verified, committed per conflict
+  policy with the same atomic no-replace primitive as copy. No path comes
+  from the client except the typed root + name; names pass the same
+  normalization as every other entry. The gateway streams php://input to
+  the daemon socket with flat memory; Unraid's nginx body limits apply.
+- **Preview**: image/text/PDF rendered from blob object URLs fetched via
+  the authenticated download endpoint. `<img>` never executes SVG scripts;
+  text renders through Preact text nodes (escaped); PDF uses the browser's
+  sandboxed viewer. Size caps: text 256 KB, media 32 MB.
+- **Trash**: rename within the same share mount (atomic, no data copy);
+  sidecar JSONL records origins; restore refuses to replace (auto-renames);
+  purge is the normal identity-checked delete with `Purge=true`. Trash dir
+  is dot-prefixed and excluded from SMB/user-share listings by Unraid
+  convention.
+
 ## Explicit non-goals (V1)
 
 - No recycle bin / undo: deletion is permanent and confirmed per specification

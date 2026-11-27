@@ -43,6 +43,10 @@ authenticates the gateway.
 | `job_retry` | POST | re-plan and re-submit a retryable job |
 | `job_resolve` | POST | submit conflict decisions `{decisions:[{path,resolution}]}` |
 | `job_events` | GET | journal events since a sequence number |
+| `upload` | PUT | stream raw bytes → staging → atomic commit (`rootId, dir, name, policy`) |
+| `trash_list` | GET | list `.trove-trash` entries with recorded origins |
+| `trash_restore` | POST | move one entry back to its origin (auto-renames on conflict) |
+| `csrf` | GET | current WebGUI CSRF token (rotation refresh for long-lived pages) |
 | `settings` | GET | daemon settings |
 | `settings_put` | PUT | update settings (validated; data dir must be under /mnt) |
 
