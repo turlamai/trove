@@ -682,7 +682,15 @@ export function App() {
                   onClose={() => setInspect(null)}
                   onRename={(e) => setDialog({ type: "rename", pane: active, entry: e })}
                   onDelete={(e) => void opDelete(active, [e])}
-                  onShare={(t) => setDialog({ type: "share", rootId: t.rootId, path: t.path })}
+                  onShare={(t) =>
+                    setDialog({
+                      type: "share",
+                      rootId: t.rootId,
+                      // InspectorTarget.path is the parent directory — the
+                      // shared target is the entry itself
+                      path: t.path ? `${t.path}/${t.entry.name}` : t.entry.name,
+                    })
+                  }
                   onMove={(e) => {
                     if (dual) void opTransferToOtherPane(active, "move", [panes[active].path ? `${panes[active].path}/${e.name}` : e.name]);
                     else toast(t("tb.dual"), "warn");

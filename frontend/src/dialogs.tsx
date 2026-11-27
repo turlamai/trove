@@ -704,6 +704,7 @@ export function ShareDialog(p: ShareDialogProps) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [sharePort, setSharePort] = useState<number | null>(null);
+  const [shareEnabled, setShareEnabled] = useState(true);
 
   const load = async () => {
     try {
@@ -712,6 +713,7 @@ export function ShareDialog(p: ShareDialogProps) {
     } catch { /* ignore */ }
     try {
       const st = await api.settings();
+      setShareEnabled(!!st.shareEnable);
       if (st.shareEnable) setSharePort(st.sharePort);
     } catch { /* ignore */ }
   };
@@ -724,8 +726,7 @@ export function ShareDialog(p: ShareDialogProps) {
     const host = window.location.hostname;
     const proto = window.location.protocol;
     const port = sharePort ?? 8787;
-    const suffix = port !== 1996 ? ":" + port : "";
-    return `${proto}//${host}${suffix}/s/${token}`;
+    return `${proto}//${host}:${port}/s/${token}`;
   };
 
   const create = async () => {
@@ -773,6 +774,11 @@ export function ShareDialog(p: ShareDialogProps) {
           {caps && !caps.writeOk && <b> — {t("err.JOB_STORAGE_UNAVAILABLE")}</b>}
         </span>
       </div>
+      {!shareEnabled && (
+        <div class="tv-alert warn">
+          <span class="txt">{t("share.disabled")}</span>
+        </div>
+      )}
 
       <div class="tv-kv" style="margin-bottom:10px">
         <span class="k">{t("share.expiry")}</span>

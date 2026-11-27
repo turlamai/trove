@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.16">
+<!ENTITY version     "2026.12.17">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,15 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.17
+- Fix: the share dialog received the inspector's parent-directory path
+  instead of the selected file, so creating a link from the UI always
+  targeted an empty path.
+- Add the missing UI entry for folder ZIP download (inspector action);
+  daemon and gateway support already shipped in 2026.12.15.
+- Share dialog no longer hardcodes a port comparison and warns when the
+  public share listener is disabled.
+
 ### 2026.12.16
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with

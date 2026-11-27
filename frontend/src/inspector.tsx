@@ -11,6 +11,7 @@ import {
   TroveError,
 } from "./api";
 import {
+  IconArchive,
   IconCheck,
   IconClose,
   IconCopy,
@@ -315,6 +316,15 @@ export function Inspector({
                 >
                   <IconCopy size={13} />
                   {t("act.download")}
+                </a>
+              )}
+              {detail.kind === "dir" && (
+                <a
+                  class="tv-btn"
+                  href={api.zipUrl(detail.root.kind + ":" + detail.root.id, detail.path)}
+                >
+                  <IconArchive size={13} />
+                  {t("act.zip")}
                 </a>
               )}
               <button class="tv-btn" onClick={() => onShare?.(target)}>
