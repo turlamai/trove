@@ -8,7 +8,8 @@ acceptance testing (docs/compatibility-matrix.md).
 
 ```
 Unraid WebGUI (nginx, same origin)
-├── trove.page / trove-settings.page      Tools & Settings registration
+├── trove.page / trove-share.page         Tools & SHARES registration
+│   └── trove-settings.page               Settings registration
 ├── /plugins/trove/web/app.{js,css}       static SPA bundle (no CDN)
 └── /plugins/trove/include/gateway.php        PHP gateway (auth, CSRF, routing)
                  │  Unix domain socket /run/trove/troved.sock
