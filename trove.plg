@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "1919f70e4359c617faf2a9cceb6f269b90a47858e59310c7dfc32d0422d03e76">
+<!ENTITY packageSHA  "438ff2a8345590c3e1133512caa00468171d673cdaf6b8a34f62e093bb131fbc">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,14 +25,6 @@
 
 <CHANGES>
 ### 2026.12.25
-- Align typography with the native webgui: drop the extra font stack
-  (use the host's clear-sans exactly), adopt the native text color
-  (#1d1b1b), render tables at the native 11px with 1px tracking and
-  normal-weight headers, and match the webgui button metrics (14px,
-  1.8px tracking) and input line height. No layout or component
-  changes.
-
-### 2026.12.24
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
