@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.28">
+<!ENTITY version     "2026.12.29">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,13 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.29
+- Fix: the SHARES registration used Menu="Shares" without an ordinal,
+  which creates an unreachable orphan page — the SHARES list page never
+  shows a link to it. Register as Menu="Shares:2" so Trove renders as a
+  real tab next to "User Shares" (the same numbered-tab mechanism ZFS
+  Master uses on Main).
+
 ### 2026.12.28
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with

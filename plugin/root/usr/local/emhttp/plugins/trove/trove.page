@@ -1,10 +1,12 @@
-Menu="Shares"
+Menu="Shares:2"
 Title="Trove"
 Icon="trove.png"
 Type="php"
 ---
 <?php
-// Trove — native file manager for Unraid (Shares section tab).
+// Trove — native file manager for Unraid (second tab of the SHARES
+// section, rendered next to "User Shares" — same mechanism ZFS Master
+// uses on Main).
 // Renders the SPA container; the bundle is served by nginx from the plugin
 // directory, cache-busted with the plugin version.
 $plugin = 'trove';
