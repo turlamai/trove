@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "d68289da70491edd54aaa8dac7de1379bd24535f63fbb85331bab711eb05edc6">
+<!ENTITY packageSHA  "dff35f5100205fae1a3c8d657deb6eeb1cbd8ddb0cfe6f246578bab647ea02c8">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -15,7 +15,7 @@
 <PLUGIN name="&name;"
         author="&author;"
         version="&version;"
-        launch="Utilities/trove"
+        launch="Tools/trove"
         pluginURL="&pluginURL;"
         icon="folder-open"
         min="7.0.0"
@@ -25,15 +25,6 @@
 
 <CHANGES>
 ### 2026.12.39
-- Settle the entry placement: the Tools card grid lists official tools
-  only — five registration variants (direct, ordinal, containers,
-  class-name icons) all fail to produce a card for third-party pages,
-  which is why Fix Common Problems and ZFS Master live in Settings →
-  User Utilities on 7.3. Trove follows the same standard location:
-  User Utilities holds the Trove card (file manager) and the Trove
-  Settings card; the Dashboard tile stays the daily entrance.
-
-### 2026.12.38
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
