@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "2ca0b921d302bbe02d9f1ae9296767c25517585271b5046dab7cf52bfdc0060a">
+<!ENTITY packageSHA  "5f0220defca91a8cc1133de1c688947b816676405e69b226eff20fda0d3ea5f3">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,13 +25,6 @@
 
 <CHANGES>
 ### 2026.12.31
-- Standards pass: default.cfg now ships all daemon settings keys
-  (trash + public-share listener were missing from the factory
-  template), so a fresh install starts with a complete, parseable
-  config matching docs/conventions. No behavior change on existing
-  installs.
-
-### 2026.12.30
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
