@@ -1,4 +1,4 @@
-Menu="Tools"
+Menu="Tools:50"
 Title="Trove"
 Icon="trove.png"
 Type="menu"

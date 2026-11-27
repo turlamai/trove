@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.32">
+<!ENTITY version     "2026.12.33">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,13 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.33
+- Use ordinal menu registration (Settings:50 / Tools:50) — the form
+  third-party plugins like IPMI and Plex Streams use to appear as
+  clickable cards on the section listing pages instead of being
+  rendered inline. Untyped or unordered entries expand inline; ordinal
+  entries are listed.
+
 ### 2026.12.32
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with

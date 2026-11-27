@@ -1,4 +1,4 @@
-Menu="Settings"
+Menu="Settings:50"
 Title="Trove"
 Icon="trove.png"
 Type="menu"
