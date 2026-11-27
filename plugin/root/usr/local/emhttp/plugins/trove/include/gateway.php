@@ -177,7 +177,9 @@ function trove_stream_forward(string $daemonPath, string $query): void {
                 return $len;
             }
             if (!$sentStatus && stripos($t, 'HTTP/') === 0) {
-                if (preg_match('/\s(\d{3})\s*$/', $t, $m)) {
+                // "HTTP/1.1 206 Partial Content" — the reason phrase may
+                // trail, so match the code right after the version
+                if (preg_match('#^HTTP/\S+\s+(\d{3})#i', $t, $m)) {
                     http_response_code((int)$m[1]);
                 }
                 $sentStatus = true;
