@@ -26,7 +26,7 @@
 <CHANGES>
 ### 2026.12.20
 - Fix: creating a share link failed with INTERNAL (ENOENT) on a fresh
-  install — the share store never created its <dataDir>/trove-shares/
+  install — the share store never created its &lt;dataDir&gt;/trove-shares/
   directory before persisting.
 - Fix: the in-app settings save posted to the read-only route
   (cmd=settings, GET-only) and was always rejected with 405; it now uses
