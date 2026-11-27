@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "1a4823b9d5df99222bc4636326f937549a22bc010b8dcb5fbbddee784df888ae">
+<!ENTITY packageSHA  "884d8c1a3de70ab0915960403ba3e860c4592570b0e7f94d5e37d65979ad736a">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,14 +25,6 @@
 
 <CHANGES>
 ### 2026.12.36
-- Move the file-manager entry into Tools proper: a file manager is a
-  tool, not a setting. The entry card joins the same container as
-  Diagnostics and Log Viewer (Menu="UNRAID-OS"), so it sits flat among
-  the tool cards on the Tools page. The settings card stays in Settings
-  → User Utilities, and the Dashboard tile remains the daily entrance.
-  URLs unchanged.
-
-### 2026.12.35
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
