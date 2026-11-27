@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "dcd7a50c0c163748a5ae282257459adeb54ce910e2dec3cfe695d06a669a661f">
+<!ENTITY packageSHA  "1919f70e4359c617faf2a9cceb6f269b90a47858e59310c7dfc32d0422d03e76">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,13 +25,6 @@
 
 <CHANGES>
 ### 2026.12.24
-- Fix: ZIP and single-file downloads lost the daemon's headers in the
-  generic forward — archives arrived typed application/json with no
-  filename, so the browser saved them as gateway.json. The gateway now
-  sets the honest Content-Type and an RFC 5987 Content-Disposition
-  (UTF-8 names preserved) for both commands.
-
-### 2026.12.23
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
