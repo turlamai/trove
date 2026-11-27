@@ -68,7 +68,7 @@ func TestTrashMoveRestorePurge(t *testing.T) {
 
 func TestTrashNameConflictAutoRename(t *testing.T) {
 	e, src, _ := testEnv(t)
-	write(t, src, "a.txt", "first")
+	write(t, src, "a.txt", "trashed copy")
 	write(t, src, "b.txt", "second")
 
 	del := func(rel string) {
@@ -103,7 +103,7 @@ func TestTrashNameConflictAutoRename(t *testing.T) {
 	}
 	got, _ := os.ReadFile(filepath.Join(src, "a.txt"))
 	got2, _ := os.ReadFile(filepath.Join(src, "a (1).txt"))
-	if string(got) != "recreated by another writer" || string(got2) != "hello trash" {
+	if string(got) != "recreated by another writer" || string(got2) != "trashed copy" {
 		t.Fatalf("restore content mixup: a.txt=%q a(1)=%q", got, got2)
 	}
 }
