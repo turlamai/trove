@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.39">
+<!ENTITY version     "2026.12.40">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,14 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.40
+- Restore the Trove container card (removed by mistake in .39): the
+  "Trove" card in Settings → User Utilities IS the container page
+  (Menu="Tools:50" Type="menu") whose member is the file manager
+  itself — deleting it removed the entry while leaving its member
+  unreachable from the listing. Container card back; file manager and
+  settings cards both visible again.
+
 ### 2026.12.39
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
