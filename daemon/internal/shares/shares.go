@@ -51,8 +51,14 @@ type Store struct {
 }
 
 // OpenStore loads (and prunes expired entries from) the share store.
+// The storage directory is created on demand — a fresh install has no
+// <dataDir>/trove-shares/ yet, and the first Create would otherwise fail
+// with ENOENT on the tmp+rename persist.
 func OpenStore(dataDir string) (*Store, error) {
 	s := &Store{path: filepath.Join(dataDir, "shares.json"), shares: map[string]*Share{}}
+	if err := os.MkdirAll(dataDir, 0o700); err != nil {
+		return nil, err
+	}
 	raw, err := os.ReadFile(s.path)
 	if err != nil {
 		if os.IsNotExist(err) {

@@ -372,7 +372,7 @@ export const api = {
   },
   settings: () => request<Settings>("GET", "settings"),
   // POST from the browser (nginx CSRF layer); the gateway forwards as PUT.
-  saveSettings: (patch: Partial<Settings>) => request<{ status: string }>("POST", "settings", { body: patch }),
+  saveSettings: (patch: Partial<Settings>) => request<{ status: string }>("POST", "settings_put", { body: patch }),
   search: (rootId: string, path: string, q: string, limit = 500) =>
     request<{
       root: RootRef;
