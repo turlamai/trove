@@ -31,6 +31,10 @@ export function SettingsView() {
         protectedMode: srv.protectedMode,
         expertMode: srv.expertMode,
         showHidden: srv.showHidden,
+        trash: srv.trash,
+        shareEnable: srv.shareEnable,
+        sharePort: srv.sharePort,
+        shareBind: srv.shareBind,
         language: prefs.lang,
       });
       toast(t("set.saved") + " · " + t("set.needsReload"));
@@ -144,6 +148,46 @@ export function SettingsView() {
               <div class="hint">.trove-trash/</div>
             </label>
           </div>
+          <div class="tv-switchline">
+            <input
+              type="checkbox"
+              class="tv-checkbox"
+              checked={srv.shareEnable}
+              onChange={(ev: Event) => patch({ shareEnable: (ev.target as HTMLInputElement).checked })}
+            />
+            <label>
+              {t("set.share")}
+              <div class="hint">{t("set.shareHint")}</div>
+            </label>
+          </div>
+          {srv.shareEnable && (
+            <>
+              <div class="tv-field" style="max-width:160px">
+                <label>{t("set.sharePort")}</label>
+                <input
+                  class="tv-input mono"
+                  type="number"
+                  min="1024"
+                  max="65535"
+                  value={srv.sharePort}
+                  onInput={(ev: InputEvent) =>
+                    patch({ sharePort: Number((ev.target as HTMLInputElement).value) || 8787 })
+                  }
+                />
+              </div>
+              <div class="tv-field" style="max-width:280px">
+                <label>{t("set.shareBind")}</label>
+                <select
+                  class="tv-input"
+                  value={srv.shareBind}
+                  onChange={(ev: Event) => patch({ shareBind: (ev.target as HTMLSelectElement).value })}
+                >
+                  <option value="lan">{t("set.shareBind.lan")}</option>
+                  <option value="">{t("set.shareBind.all")}</option>
+                </select>
+              </div>
+            </>
+          )}
           <div class="tv-field">
             <label>{t("set.protectedMode")}</label>
             <select
