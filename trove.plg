@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.29">
+<!ENTITY version     "2026.12.30">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,16 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.30
+- Revert the entry to Tools: the numbered-tab trick that puts ZFS
+  Master on Main does not render on the SHARES section — the 7.3
+  responsive Shares page has no tab bar at all (verified against the
+  webGUI sources and on the target server with both Menu="Shares" and
+  Menu="Shares:2"). Tools remains the only section where third-party
+  pages get a visible, sanctioned entry; the Dashboard tile stays as
+  the daily-use surface and /Shares/trove remains reachable as a
+  direct URL.
+
 ### 2026.12.29
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
