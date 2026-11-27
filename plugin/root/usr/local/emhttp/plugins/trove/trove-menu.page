@@ -1,0 +1,9 @@
+Menu="Tools:50"
+Type="menu"
+Title="Trove"
+Icon="trove.png"
+---
+<?php
+// Trove container card for the Tools listing (same pattern as About /
+// Disk Utilities): section pages render only menu-type containers;
+// members of this container render inside it.

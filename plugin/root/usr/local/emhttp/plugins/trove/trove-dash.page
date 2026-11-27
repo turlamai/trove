@@ -56,7 +56,7 @@ $statusText = !$dataOk ? 'Read-only (no data dir)' : ($running > 0 ? "Running ({
         </span>
         <span class="tile-header-right">
           <span class="tile-header-right-controls">
-            <a href="/Utilities/trove-settings"><i class="fa fa-cog control"></i></a>
+            <a href="/Settings/trove-settings"><i class="fa fa-cog control"></i></a>
           </span>
         </span>
       </span>
@@ -87,7 +87,7 @@ $statusText = !$dataOk ? 'Read-only (no data dir)' : ($running > 0 ? "Running ({
           </tr>
         </table>
         <div style="margin-top:8px">
-          <a class="button" href="/Utilities/trove" style="margin-right:8px">Open file manager</a>
+          <a class="button" href="/Tools/trove" style="margin-right:8px">Open file manager</a>
           <? if (!$dataOk): ?><span style="color:#999">configure a data dir to enable writes</span><? endif; ?>
         </div>
       </div>
