@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "b2c19163714aef5f261b010034719e50855731f40eab0a35f3a5faeb5ef2daa2">
+<!ENTITY packageSHA  "2372e2fa5a8c6d0def9b7275439ede1e1984e00731840c207afb7f9781728f51">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -15,7 +15,7 @@
 <PLUGIN name="&name;"
         author="&author;"
         version="&version;"
-        launch="Shares/trove"
+        launch="Tools/trove"
         pluginURL="&pluginURL;"
         icon="folder-open"
         min="7.0.0"
@@ -25,13 +25,6 @@
 
 <CHANGES>
 ### 2026.12.28
-- Move the entry point into the SHARES section: a file manager belongs
-  on the data surface, not under Tools. The page renders identically
-  (full-width standalone SPA), now reached as a Trove tab in SHARES;
-  the Dashboard tile and plugin launch link follow. Configuration
-  stays under Settings → Trove.
-
-### 2026.12.27
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
