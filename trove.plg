@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.38">
+<!ENTITY version     "2026.12.39">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -15,7 +15,7 @@
 <PLUGIN name="&name;"
         author="&author;"
         version="&version;"
-        launch="Tools/trove"
+        launch="Utilities/trove"
         pluginURL="&pluginURL;"
         icon="folder-open"
         min="7.0.0"
@@ -24,6 +24,15 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.39
+- Settle the entry placement: the Tools card grid lists official tools
+  only — five registration variants (direct, ordinal, containers,
+  class-name icons) all fail to produce a card for third-party pages,
+  which is why Fix Common Problems and ZFS Master live in Settings →
+  User Utilities on 7.3. Trove follows the same standard location:
+  User Utilities holds the Trove card (file manager) and the Trove
+  Settings card; the Dashboard tile stays the daily entrance.
+
 ### 2026.12.38
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
