@@ -87,12 +87,13 @@ func TestTrashNameConflictAutoRename(t *testing.T) {
 	if err != nil || len(infos1) != 1 {
 		t.Fatalf("trash list: %v %+v", err, infos1)
 	}
-	// 恢复 a.txt 回原位
+	// 恢复 a.txt 回原位（内容 "first"）
 	if _, err := e.TrashRestore(model.RootRef{Kind: model.KindShare, ID: "src"}, infos1[0].Name); err != nil {
 		t.Fatalf("restore 1: %v", err)
 	}
 
-	// 再次删除 a.txt（内容已不同），原位置已被占用 → 恢复时冲突自动改名
+	// 原位置再次被占用：写入不同内容，再删（进回收站）。
+	// 恢复时 "a.txt" 已被占用 → 冲突自动改名 "a (1).txt"。
 	write(t, src, "a.txt", "second version")
 	del("a.txt")
 	_, infos2, err := e.TrashList(model.RootRef{Kind: model.KindShare, ID: "src"})
@@ -108,7 +109,7 @@ func TestTrashNameConflictAutoRename(t *testing.T) {
 	}
 	got, _ := os.ReadFile(filepath.Join(src, "a.txt"))
 	got2, _ := os.ReadFile(filepath.Join(src, "a (1).txt"))
-	if string(got) != "second version" || string(got2) != "first" {
+	if string(got) != "first" || string(got2) != "second version" {
 		t.Fatalf("restore content mixup: a.txt=%q a(1)=%q", got, got2)
 	}
 }
