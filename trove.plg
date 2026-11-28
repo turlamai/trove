@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "84de28925eff78a9d8efb8858f592a7e4b3e4d7a609a56b59f1391daf070c8d5">
+<!ENTITY packageSHA  "b8e45517d60ce2e84665cacba04c6d48e72c9fcd320539b39714014d9f3714d4">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,12 +25,6 @@
 
 <CHANGES>
 ### 2026.12.41
-- Rename the container page (trove-menu.page → trove-nav.page): emhttpd
-  keeps a menu index across .page deletions/re-additions, so restoring
-  a file with the same name stayed invisible. A fresh filename forces
-  the index to pick it up.
-
-### 2026.12.40
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
