@@ -7,7 +7,7 @@
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
 <!ENTITY packageURL  "https://github.com/&github;/releases/download/v&version;/&packageFile;">
-<!ENTITY packageSHA  "117a15c3cc2241068c5334f23da27078cb7caa4c08c580874bb2e972dc1dc18c">
+<!ENTITY packageSHA  "5a10618e62efe8ac49e44000c2fb63201edacce99812412cd9166cf3ab9f9bc7">
 <!ENTITY pluginLOC   "/boot/config/plugins/&name;">
 <!ENTITY emhttpLOC   "/usr/local/emhttp/plugins/&name;">
 ]>
@@ -25,12 +25,6 @@
 
 <CHANGES>
 ### 2026.12.44
-- Point the Dashboard tile and launch link at the actual page URLs:
-  container members take their section's path prefix, so the file
-  manager lives at /Settings/trove and its settings at
-  /Settings/trove-settings.
-
-### 2026.12.43
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
   staging → verify → atomic commit, task center, zh-CN/en UI.
