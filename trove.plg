@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name        "trove">
 <!ENTITY author      "turlamai">
-<!ENTITY version     "2026.12.40">
+<!ENTITY version     "2026.12.41">
 <!ENTITY github      "turlamai/trove">
 <!ENTITY pluginURL   "https://raw.githubusercontent.com/&github;/main/trove.plg">
 <!ENTITY packageFile "trove-&version;-x86_64-1.txz">
@@ -24,6 +24,12 @@
         support="https://github.com/&github;/issues">
 
 <CHANGES>
+### 2026.12.41
+- Rename the container page (trove-menu.page → trove-nav.page): emhttpd
+  keeps a menu index across .page deletions/re-additions, so restoring
+  a file with the same name stayed invisible. A fresh filename forces
+  the index to pick it up.
+
 ### 2026.12.40
 - Development preview: shares-first file browsing, optional dual-pane,
   storage-safety checks (namespace mixing refused), background jobs with
